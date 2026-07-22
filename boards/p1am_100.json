@@ -1,0 +1,43 @@
+{
+  "build": {
+    "arduino": {
+      "ldscript": "flash_with_bootloader.ld"
+    },
+    "core": "arduino",
+    "cpu": "cortex-m0plus",
+    "extra_flags": "-DUSE_ARDUINO_MKR_PIN_LAYOUT -D__SAMD21G18A__ -DARM_MATH_CM0PLUS",
+    "f_cpu": "48000000L",
+    "hwids": [
+      ["0x1354", "0x4000"],
+      ["0x1354", "0x4001"]
+    ],
+    "mcu": "samd21g18a",
+    "usb_product": "P1AM-100",
+    "usb_vid": "0x1354",
+    "usb_pid": "0x4000",
+    "variant": "P1AM-100"
+  },
+  "debug": {
+    "jlink_device": "ATSAMD21G18",
+    "openocd_chipname": "at91samd21g18",
+    "openocd_target": "at91samdXX",
+    "svd_path": "ATSAMD21G18A.svd"
+  },
+  "frameworks": [
+    "arduino"
+  ],
+  "name": "ProductivityOpen P1AM-100 (AutomationDirect)",
+  "upload": {
+    "disable_flushing": false,
+    "maximum_ram_size": 32768,
+    "maximum_size": 262144,
+    "native_usb": true,
+    "offset": "0x2000",
+    "protocol": "sam-ba",
+    "require_upload_port": true,
+    "use_1200bps_touch": true,
+    "wait_for_upload_port": true
+  },
+  "url": "https://facts-engineering.github.io/modules/P1AM-100/P1AM-100.html",
+  "vendor": "FACTS Engineering"
+}
