@@ -6,7 +6,7 @@ Controls a smore making robot using a P1AM 200 Arduino based PLC.
 
 **Build:** `pio run -e p1am_200`  
 **Flash:** `pio run -e p1am_200 -t upload`  
-**Start 115200 Baud Serial Monitor:** `pio device monitor` 
+**Start 115200 Baud Serial Monitor:** `pio device monitor`  
 
 ## Setup
 
