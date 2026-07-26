@@ -1,5 +1,5 @@
-#ifndef P1AMLogged_h
-#define P1AMLogged_h
+#ifndef P1AMLOGGED_h
+#define P1AMLOGGED_h
 
 #define MAX_DO 16 //Maximum number of DO per module. Accurate as of 2026-07-24
 #define MAX_AO 8  //Maximum number of AO per module. Accurate as of 2026-07-24  

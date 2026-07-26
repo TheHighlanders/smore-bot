@@ -1,4 +1,4 @@
-#include <P1AMLogged.h>
+#include <hardware/P1AMLogged.h>
 
 void P1AMLogged::writeDiscrete(uint32_t data, uint8_t slot, uint8_t channel){
     P1AM::writeDiscrete(data, slot, channel);

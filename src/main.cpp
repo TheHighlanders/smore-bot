@@ -14,6 +14,8 @@
  */
 
 #include <P1AM.h>
+#include "machine/Machine.h"
+#include "stations/ExampleStation.h"
 
 void setup() {
   Serial.begin(115200);
@@ -28,6 +30,12 @@ void setup() {
   }
 
   Serial.println("Base Controller ready.");
+
+  ExampleStation example("ExampleStation");
+
+  std::vector<Station*> stations{&example};
+
+  Machine smoreBot(stations);
 }
 
 void loop() {
