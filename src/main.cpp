@@ -13,9 +13,12 @@
  * Library: https://github.com/facts-engineering/P1AM
  */
 
-#include <P1AM.h>
+#include "hardware/P1AMLogged.h"
 #include "machine/Machine.h"
 #include "stations/ExampleStation.h"
+#include "stations/Dispenser.h"
+#include "stations/Oven.h"
+#include "main.h"
 
 void setup() {
   Serial.begin(115200);
@@ -31,19 +34,72 @@ void setup() {
 
   Serial.println("Base Controller ready.");
 
-  ExampleStation example("ExampleStation");
+  // Configurations
+  Dispenser::DispenserHWConfig gc1Config = {
+    {0,0}, // capture
+    {0,0}, // dispense
+    {0,0}, // traySense
+    0, // active
+    0, // inactive
+  };
 
-  std::vector<Station*> stations{&example};
+    Dispenser::DispenserHWConfig chocConfig = {
+    {0,0}, // capture
+    {0,0}, // dispense
+    {0,0}, // traySense
+    0, // active
+    0, // inactive
+  };
 
-  Machine smoreBot(stations);
+    Dispenser::DispenserHWConfig mmConfig = {
+    {0,0}, // capture
+    {0,0}, // dispense
+    {0,0}, // traySense
+    0, // active
+    0, // inactive
+  };
+
+  Oven::OvenHWConfig ovenConfig = {
+    {0,0}, // relay
+    {0,0}, // entry
+    {0,0}, // exit
+    {0,0}, // thermocouple
+    0, // setpoint;
+    0, // deadzone
+  };
+
+    Dispenser::DispenserHWConfig gc2Config = {
+    {0,0}, // capture
+    {0,0}, // dispense
+    {0,0}, // traySense
+    0, // active
+    0, // inactive
+  };
+
+  // Station Creation
+  Dispenser gc1("GC1", P1, gc1Config);
+  Dispenser choc("CHOC", P1, chocConfig);
+  Dispenser mm("MM", P1, mmConfig);
+  Oven      oven("Oven", P1, ovenConfig);
+  Dispenser gc2("GC2", P1, gc2Config);
+
+  std::vector<Station*> stations{&gc1, &choc, &mm, &oven, &gc2};
+
+  // Machine Setup
+  smoreBot = Machine(stations);
 }
 
 void loop() {
-  P1.writeDiscrete(HIGH, 1, 2);   // Slot 1, Channel 2 → ON
-  Serial.println("Output ON");
-  delay(1000);
+    smoreBot.update();
 
-  P1.writeDiscrete(LOW, 1, 2);    // Slot 1, Channel 2 → OFF
-  Serial.println("Output OFF");
-  delay(1000);
+    // Poll Buttons (TODO, add checks + global config)
+    // Start Button
+    if (false) {
+        smoreBot.startCycle();
+    }
+
+    // EStop
+    if(false) {
+        smoreBot.eStop();
+    }
 }
