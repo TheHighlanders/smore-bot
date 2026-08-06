@@ -3,7 +3,7 @@
 
 #include "machine/Machine.h"
 #include "machine/Station.h"
-#include "hardware/P1AMLogged.h"
+#include "P1AM.h"
 
 class Dispenser : public Station{
     public:
@@ -29,10 +29,10 @@ class Dispenser : public Station{
         virtual std::string state() const override;
 
     private:
-        bool dispensing;
-
         P1AM hardware;
         DispenserHWConfig config;
+
+        bool dispensing;
 };
 
 #endif

@@ -11,7 +11,7 @@ void Oven::update() {
             !(trayInside && hardware.readDiscrete(config.trayExitSense));
 
         // TODO: Units????
-        float temperature = hardware.readTemperature(config.thermocouple);
+        float temperature = hardware.readTemperature(config.thermistor);
 
         if (temperature != 0) { // Check for error sentinel
             if (temperature < (config.tempSetpoint - config.tempDeadzone)) {

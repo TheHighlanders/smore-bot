@@ -3,7 +3,7 @@
 
 #include "machine/Machine.h"
 #include "machine/Station.h"
-#include "hardware/P1AMLogged.h"
+#include "P1AM.h"
 
 class Oven : public Station{
     public:
@@ -11,13 +11,13 @@ class Oven : public Station{
             channelLabel relaySolenoid;         // Output slot and channel with Oven heater relay connected
             channelLabel trayEntrySense;        // Input slot and channel with tray entry sensor connected
             channelLabel trayExitSense;         // Input slot and channel with tray exit sensor connected
-            channelLabel thermocouple;          // Input slot and channle with thermocouple connected
+            channelLabel thermistor;          // Input slot and channle with thermistor connected
             float tempSetpoint;                 // Setpoint for temperature of the oven
             float tempDeadzone;
         };
 
         // TODO: Config / setpoint / deadzone update live
-        Oven(std::string name, P1AM& p1, OvenHWConfig hwConfig) : Station(name), hardware(p1), config(hwConfig), atTemp(false), trayInside(false) {}; // Constructs a Oven station. Names must be unique.
+        Oven(std::string name, P1AM& p1, OvenHWConfig hwConfig) : Station(name), hardware(p1), config(hwConfig), atTemp(false), trayInside(false) {} // Constructs a Oven station. Names must be unique.
 
         virtual void update() override; // Update the station (poll sensors, manage internal state, etc)
 
@@ -30,11 +30,11 @@ class Oven : public Station{
         virtual std::string state() const override;
 
     private:
-        bool atTemp;
-        bool trayInside;
-
         P1AM hardware;
         OvenHWConfig config;
+
+        bool atTemp;
+        bool trayInside;
 };
 
 #endif

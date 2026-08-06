@@ -13,11 +13,8 @@
  * Library: https://github.com/facts-engineering/P1AM
  */
 
-#include "hardware/P1AMLogged.h"
+#include "P1AM.h"
 #include "machine/Machine.h"
-#include "stations/ExampleStation.h"
-#include "stations/Dispenser.h"
-#include "stations/Oven.h"
 #include "main.h"
 
 void setup() {
@@ -35,46 +32,9 @@ void setup() {
   Serial.println("Base Controller ready.");
 
   // Configurations
-  Dispenser::DispenserHWConfig gc1Config = {
-    {0,0}, // capture
-    {0,0}, // dispense
-    {0,0}, // traySense
-    0, // active
-    0, // inactive
-  };
-
-    Dispenser::DispenserHWConfig chocConfig = {
-    {0,0}, // capture
-    {0,0}, // dispense
-    {0,0}, // traySense
-    0, // active
-    0, // inactive
-  };
-
-    Dispenser::DispenserHWConfig mmConfig = {
-    {0,0}, // capture
-    {0,0}, // dispense
-    {0,0}, // traySense
-    0, // active
-    0, // inactive
-  };
-
-  Oven::OvenHWConfig ovenConfig = {
-    {0,0}, // relay
-    {0,0}, // entry
-    {0,0}, // exit
-    {0,0}, // thermocouple
-    0, // setpoint;
-    0, // deadzone
-  };
-
-    Dispenser::DispenserHWConfig gc2Config = {
-    {0,0}, // capture
-    {0,0}, // dispense
-    {0,0}, // traySense
-    0, // active
-    0, // inactive
-  };
+  configureMachine();
+  configureModules();
+  configureStations();
 
   // Station Creation
   Dispenser gc1("GC1", P1, gc1Config);
@@ -102,4 +62,60 @@ void loop() {
     if(false) {
         smoreBot.eStop();
     }
+}
+
+void configureMachine(){
+    modules.emplace("P1-15TD2", 0); //Digital Output
+    modules.emplace("P1-08TRS", 0); //Relay
+    modules.emplace("P1-04NTC", 0); //Thermistor
+}
+
+void configureModules(){
+    // Configure Thermistor
+    // https://facts-engineering.github.io/modules/P1-04NTC/P1-04NTC.html
+    // High Side Burnout degF, 10k-CP (Type 3), All channels enabled
+    const char P1_04NTC_CONFIG[] = { 0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00 };
+    P1.configureModule(P1_04NTC_CONFIG, modules.at("P1-04NTC"));
+}
+
+void configureStations(){
+    gc1Config = {
+    {modules.at("P1-15TD2"),0}, // capture
+    {0,0}, // dispense
+    {0,0}, // traySense
+    0, // active
+    0, // inactive
+  };
+
+chocConfig = {
+    {modules.at("P1-15TD2"),0}, // capture
+    {0,0}, // dispense
+    {0,0}, // traySense
+    0, // active
+    0, // inactive
+  };
+
+mmConfig = {
+    {modules.at("P1-15TD2"),0}, // capture
+    {0,0}, // dispense
+    {0,0}, // traySense
+    0, // active
+    0, // inactive
+  };
+ ovenConfig = {
+    {modules.at("P1-15TD2"),0}, // relay
+    {0,0}, // entry
+    {0,0}, // exit
+    {modules.at("P1-04NTC"),0}, // thermocouple
+    0, // setpoint;
+    0, // deadzone
+  };
+
+gc2Config = {
+    {modules.at("P1-15TD2"),0}, // capture
+    {0,0}, // dispense
+    {0,0}, // traySense
+    0, // active
+    0, // inactive
+  };
 }
