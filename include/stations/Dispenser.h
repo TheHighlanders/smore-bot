@@ -8,11 +8,12 @@
 class Dispenser : public Station{
     public:
         struct DispenserHWConfig{
-            channelLabel captureSolenoid;   // Output slot and channel with capture solenoid connected
+            channelLabel captureSolenoid;       // Output slot and channel with capture solenoid connected
             channelLabel dispensePWM;           // Output slot and channel with dispenser Servo connected
             channelLabel traySense;             // Input slot and channel with tray sensor connected
             float dispensePWMInactive;          // Position for dispenser servo while not dispensing
             float dispensePWMActive;            // Position for dispenser servo while dispensing
+            long dispenseTimeMs;                // Time for dispense to complete once servo is fired
         };
 
 
@@ -27,6 +28,8 @@ class Dispenser : public Station{
         virtual void eStop() override; // Safes all hardware connected to the station.
 
         virtual std::string state() const override;
+
+        static bool dispenseTimerCallback(void* argument); // Callback fired after dispense timer elapses, allowing dispense to occur
 
     private:
         P1AM hardware;

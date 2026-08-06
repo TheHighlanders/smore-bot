@@ -3,6 +3,7 @@
 
 #include "machine/Station.h"
 
+#include <arduino-timer.h>
 #include <vector>
 #include <type_traits>
 
@@ -33,6 +34,8 @@ class Machine{
 
         void eStop(); // Estops all stations, and holds the top-level machine
 
+        static Timer<5, millis> timer; //static timer object, max 5 concurrency, millisecond resolution
+
     private:
         Station* getNextStation(Station* station); // Returns ptr to the sequentially next station in the list.
 
@@ -47,5 +50,6 @@ class Machine{
         bool running = false;
         bool eStopped = false;
 };
+
 
 #endif

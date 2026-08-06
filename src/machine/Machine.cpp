@@ -3,6 +3,8 @@
 
 #include <algorithm>
 
+Timer<5, millis> Machine::timer; // Define and allocate the timer.
+
 void Machine::update() {
     if (!eStopped) {
         // Update all stations

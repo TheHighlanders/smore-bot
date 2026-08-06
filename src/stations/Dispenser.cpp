@@ -4,16 +4,11 @@
 void Dispenser::update(){
     if(active){
         // Poll Sensor, and wait for tray to be captured
-        if(hardware.readDiscrete(config.traySense)){
+        if(!dispensing && hardware.readDiscrete(config.traySense)){
             // Tray captured, dispense
             hardware.writePWMDuty(config.dispensePWMActive, config.dispensePWM);
             dispensing = true;
-        }
-
-        if(dispensing){
-            //TODO: Add Timer
-            hardware.writePWMDuty(config.dispensePWMInactive, config.dispensePWM);
-            dispensing = false;
+            Machine::timer.in(5000, dispenseTimerCallback, this);
         }
     }
 }
@@ -36,6 +31,17 @@ void Dispenser::deactivate(){
 
     active = false;
     dispensing = false;
+}
+
+bool Dispenser::dispenseTimerCallback(void* argument){
+    //Used to allow callback function to be static
+    Dispenser* self = static_cast<Dispenser*>(argument);
+
+    // Write to the PWM to command dispenser in, update state, and fire complete callback
+    self->hardware.writePWMDuty(self->config.dispensePWMInactive, self->config.dispensePWM);
+    self->dispensing = false;
+    self->m_machine->onWorkCompleteCallback(self);
+    return false; // Run timer once
 }
 
 bool Dispenser::free() const{
