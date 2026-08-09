@@ -31,12 +31,28 @@ void setup() {
 
   Serial.println("Base Controller ready.");
 
-  // TODO: Roll Call Checking
-
   // Configurations
   configureMachine();
   configureModules();
   configureStations();
+
+  int numModules = modules.size();
+  const char* moduleNames[numModules];
+  for(auto module : modules){
+    moduleNames[module.second] = module.first.c_str(); // Convert to C Strings
+  }
+
+  // Ensure Machine is intact
+  int machineOK = P1.rollCall(moduleNames, modules.size());
+  if(!machineOK){
+    Serial.println("Machine Configuration Errors. Modules Connected:");
+    int found = P1.printModules();
+    Serial.println("Configuration Expected:");
+    for(auto name : moduleNames){
+        Serial.println(name);
+    }
+    Serial.printf("Expected: %d, Actual: %d\r\n", numModules, found);
+  }
 
   // Station Creation
   Dispenser gc1("GC1", P1, gc1Config);
@@ -55,8 +71,13 @@ void loop() {
     smoreBot.update();
 
     // TODO: Connection checking
+    int fault = P1.checkConnection();
+    if(!P1.isBaseActive() || fault){
+        Serial.printf("Machine E-Stopping, Fault at %d\r\n", fault);
+        smoreBot.eStop();
+    }
 
-    // Poll Buttons (TODO debounce?)
+    // Poll Buttons
     // Run switch
     if(digitalRead(SWITCH_BUILTIN)){
         smoreBot.resume();
