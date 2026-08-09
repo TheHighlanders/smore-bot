@@ -5,6 +5,8 @@
 #include "stations/Dispenser.h"
 #include "stations/Oven.h"
 
+#include <P1AM.h>
+
 #include <map>
 #include <string>
 
@@ -18,6 +20,9 @@ void configureModules();
 
 // Station configs populated here
 void configureStations();
+
+channelLabel startButton;
+channelLabel eStop;
 
 std::map<std::string, uint8_t> modules;
 

@@ -31,16 +31,16 @@ void Oven::update() {
 bool Oven::activate(Machine* machine) {
     Serial.printf("Station %s active\r\n", name());
     m_machine = machine;
-
     active = atTemp && !trayInside;  // Activate if oven is hot, and there is no
                                      // other marshmallow inside.
-
+   
+    if(active) {hardware.writeDiscrete(1, config.trayholdSolenoid);}
     return active;
 }
 
 void Oven::deactivate() {
     Serial.printf("Station %s inactive\r\n", name());
-
+    hardware.writeDiscrete(0, config.trayholdSolenoid);
     active = false;
 }
 

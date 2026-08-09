@@ -31,6 +31,8 @@ void setup() {
 
   Serial.println("Base Controller ready.");
 
+  // TODO: Roll Call Checking
+
   // Configurations
   configureMachine();
   configureModules();
@@ -52,15 +54,25 @@ void setup() {
 void loop() {
     smoreBot.update();
 
-    // Poll Buttons (TODO, add checks + global config)
-    // Start Button
-    if (false) {
-        smoreBot.startCycle();
+    // TODO: Connection checking
+
+    // Poll Buttons (TODO debounce?)
+    // Run switch
+    if(digitalRead(SWITCH_BUILTIN)){
+        smoreBot.resume();
+    } else {
+        smoreBot.stop();
     }
 
     // EStop
-    if(false) {
+    if(P1.readDiscrete(eStop)) {
         smoreBot.eStop();
+        // Machine will need to be power cycled to release E-Stop
+    }
+
+    // Start Button
+    if (P1.readDiscrete(startButton)) {
+        smoreBot.startCycle();
     }
 }
 
@@ -76,12 +88,14 @@ void configureModules(){
     // High Side Burnout degF, 10k-CP (Type 3), All channels enabled
     const char P1_04NTC_CONFIG[] = { 0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00 };
     P1.configureModule(P1_04NTC_CONFIG, modules.at("P1-04NTC"));
+
+    pinMode(SWITCH_BUILTIN,INPUT); // Configure inbuilt switch
 }
 
 void configureStations(){
     gc1Config = {
     {modules.at("P1-15TD2"),0}, // capture
-    {0,0}, // dispense
+    PIN_A0, // dispense
     {0,0}, // traySense
     0, // active
     0, // inactive
@@ -89,7 +103,7 @@ void configureStations(){
 
 chocConfig = {
     {modules.at("P1-15TD2"),0}, // capture
-    {0,0}, // dispense
+    PIN_A0, // dispense
     {0,0}, // traySense
     0, // active
     0, // inactive
@@ -97,7 +111,7 @@ chocConfig = {
 
 mmConfig = {
     {modules.at("P1-15TD2"),0}, // capture
-    {0,0}, // dispense
+    PIN_A0, // dispense
     {0,0}, // traySense
     0, // active
     0, // inactive
@@ -106,6 +120,7 @@ mmConfig = {
     {modules.at("P1-15TD2"),0}, // relay
     {0,0}, // entry
     {0,0}, // exit
+    {0,0},
     {modules.at("P1-04NTC"),0}, // thermocouple
     0, // setpoint;
     0, // deadzone
@@ -113,7 +128,7 @@ mmConfig = {
 
 gc2Config = {
     {modules.at("P1-15TD2"),0}, // capture
-    {0,0}, // dispense
+    PIN_A0, // dispense
     {0,0}, // traySense
     0, // active
     0, // inactive

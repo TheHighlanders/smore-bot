@@ -8,11 +8,12 @@
 class Oven : public Station{
     public:
         struct OvenHWConfig{
-            channelLabel relaySolenoid;         // Output slot and channel with Oven heater relay connected
-            channelLabel trayEntrySense;        // Input slot and channel with tray entry sensor connected
-            channelLabel trayExitSense;         // Input slot and channel with tray exit sensor connected
+            channelLabel relaySolenoid;       // Output slot and channel with Oven heater relay connected
+            channelLabel trayEntrySense;      // Input slot and channel with tray entry sensor connected
+            channelLabel trayExitSense;       // Input slot and channel with tray exit sensor connected
+            channelLabel trayholdSolenoid;    // Input slot and channel with tray hold solenoid connected
             channelLabel thermistor;          // Input slot and channle with thermistor connected
-            float tempSetpoint;                 // Setpoint for temperature of the oven
+            float tempSetpoint;               // Setpoint for temperature of the oven
             float tempDeadzone;
         };
 

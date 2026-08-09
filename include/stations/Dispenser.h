@@ -8,16 +8,18 @@
 class Dispenser : public Station{
     public:
         struct DispenserHWConfig{
-            channelLabel captureSolenoid;       // Output slot and channel with capture solenoid connected
-            channelLabel dispensePWM;           // Output slot and channel with dispenser Servo connected
-            channelLabel traySense;             // Input slot and channel with tray sensor connected
-            float dispensePWMInactive;          // Position for dispenser servo while not dispensing
-            float dispensePWMActive;            // Position for dispenser servo while dispensing
-            long dispenseTimeMs;                // Time for dispense to complete once servo is fired
+            channelLabel captureSolenoid;    // Output slot and channel with capture solenoid connected
+            int dispensePWM;                 // Output pin for the dispenser servo
+            channelLabel traySense;          // Input slot and channel with tray sensor connected
+            uint8_t dispensePWMInactive;     // Position for dispenser servo while not dispensing (0-255 PWM duty cycle for servo)
+            uint8_t dispensePWMActive;       // Position for dispenser servo while dispensing
+            long dispenseTimeMs;             // Time for dispense to complete once servo is fired
         };
 
 
-        Dispenser(std::string name, P1AM& p1, DispenserHWConfig hwConfig) : Station(name), hardware(p1), config(hwConfig), dispensing(false) {}; // Constructs a Dispenser station. Names must be unique.
+        Dispenser(std::string name, P1AM& p1, DispenserHWConfig hwConfig) : Station(name), hardware(p1), config(hwConfig), dispensing(false) {
+            pinMode(config.dispensePWM, OUTPUT);
+        }; // Constructs a Dispenser station. Names must be unique.
 
         virtual void update() override; // Update the station (poll sensors, manage internal state, etc)
 

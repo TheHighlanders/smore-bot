@@ -6,7 +6,7 @@ void Dispenser::update(){
         // Poll Sensor, and wait for tray to be captured
         if(!dispensing && hardware.readDiscrete(config.traySense)){
             // Tray captured, dispense
-            hardware.writePWMDuty(config.dispensePWMActive, config.dispensePWM);
+            analogWrite(config.dispensePWM, config.dispensePWMActive);
             dispensing = true;
             Machine::timer.in(5000, dispenseTimerCallback, this);
         }
@@ -25,8 +25,7 @@ bool Dispenser::activate(Machine* machine){
 
 void Dispenser::deactivate(){
     Serial.printf("Station %s inactive\r\n", name());
-
-    hardware.writePWMDuty(config.dispensePWMInactive, config.dispensePWM);
+    analogWrite(config.dispensePWM, config.dispensePWMInactive);
     hardware.writeDiscrete(0, config.captureSolenoid); // Release Tray
 
     active = false;
@@ -38,7 +37,7 @@ bool Dispenser::dispenseTimerCallback(void* argument){
     Dispenser* self = static_cast<Dispenser*>(argument);
 
     // Write to the PWM to command dispenser in, update state, and fire complete callback
-    self->hardware.writePWMDuty(self->config.dispensePWMInactive, self->config.dispensePWM);
+    analogWrite(self->config.dispensePWM, self->config.dispensePWMInactive);
     self->dispensing = false;
     self->m_machine->onWorkCompleteCallback(self);
     return false; // Run timer once
