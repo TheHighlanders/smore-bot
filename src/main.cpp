@@ -21,7 +21,7 @@
 void setup() {
     Serial.begin(115200);
 
-    Serial.println("P1AM Blink Example");
+    Serial.println("Smore Bot Online");
     Serial.println("Waiting for Base Controller...");
 
     // P1.init() returns true once all modules have finished initializing.
@@ -39,28 +39,50 @@ void setup() {
 
     int numModules = modules.size();
     const char* moduleNames[numModules];
-    for (auto module : modules) {
-        if(module.second >= numModules){
+    moduleNames[0] = "";
+    for (const auto& module : modules) {
+        if(module.second > numModules){
             Serial.println("Module Configured in a slot larger than the number of configured modules");
             Serial.println("\tLikely Caused by missing a module in configureModules()");
             Serial.println("\tResolve and Reboot");
+            Serial.printf("Number of modules configured: %d, Module listed in position: %d\r\n", numModules, module.second);
             return;
         }
-        moduleNames[module.second] =
+        moduleNames[module.second - 1] =  // Subtract one to account for 1 indexing of slot numbers
             module.first.c_str();  // Convert to C Strings
     }
 
-    // Ensure Machine is intact
-    int machineOK = P1.rollCall(moduleNames, modules.size());
-    if (!machineOK) {
-        Serial.println("Machine Configuration Errors. Modules Connected:");
-        int found = P1.printModules();
-        Serial.println("Configuration Expected:");
-        for (auto name : moduleNames) {
-            Serial.println(name);
-        }
-        Serial.printf("Expected: %d, Actual: %d\r\n", numModules, found);
+    Serial.println("Checking Module Configuration");
+
+    Serial.println("Configured Modules:");
+    for (auto name : moduleNames) {
+         Serial.println(name);
     }
+
+    int found = P1.printModules();
+    Serial.printf("Expected: %d, Actual: %d\r\n", numModules, found);
+    if(found != numModules){
+        Serial.println("Discrepancy Detected");
+    }
+
+    Serial.println("Checking Correct Ordering");
+
+    bool moduleNameError = false;
+    for(const auto& [name, slot] : modules){
+        moduleProps props = P1.readSlotProps(slot);
+
+        if(strcmp(name.c_str(), props.moduleName) != 0){
+            Serial.printf("Error: Configuration incorrect. Slot %d\r\nExpected: %s, Found: %s\r\n", slot, name, props.moduleName);
+            moduleNameError = true;
+        }
+    }
+
+    if(moduleNameError){
+        Serial.println("Resolve Module Configuration Ordering Errors");
+        return;
+    }
+
+    Serial.println("Modules List Confirmed Correct");
 
     // Station Creation
     Dispenser gc1("GC1", P1, gc1Config);
@@ -69,16 +91,20 @@ void setup() {
     Oven oven("Oven", P1, ovenConfig);
     Dispenser gc2("GC2", P1, gc2Config);
 
+    Serial.println("Stations Instantiated");
+
     std::vector<Station*> stations{&gc1, &choc, &mm, &oven, &gc2};
 
     // Machine Setup
     smoreBot = Machine(stations);
+
+    Serial.println("Configuration Complete, Machine Ready");
 }
 
 void loop() {
     smoreBot.update();
 
-    // TODO: Connection checking
+    // Connection Checking
     int fault = P1.checkConnection();
     if (!P1.isBaseActive() || fault) {
         Serial.printf("Machine E-Stopping, Fault at %d\r\n", fault);
@@ -107,9 +133,12 @@ void loop() {
 
 void configureMachine() {
     // Add modules in format (Name, Slot) to the modules list.
-    modules.emplace("P1-15TD2", 0);  // Digital Output
-    modules.emplace("P1-08TRS", 0);  // Relay
-    modules.emplace("P1-04NTC", 0);  // Thermistor
+    // Slot numbers are NOT zero indexed (ie slot 1 is the first connected module)
+    modules.emplace("P1-16ND3", 1);  // Digital Input
+    modules.emplace("P1-04NTC", 2);  // Thermistor
+    modules.emplace("P1-04AD-2", 3); // Analog Input
+    modules.emplace("P1-15TD2", 4);  // Digital Output
+    modules.emplace("P1-08TRS", 5);  // Relay
 }
 
 void configureModules() {
@@ -121,6 +150,9 @@ void configureModules() {
     P1.configureModule(P1_04NTC_CONFIG, modules.at("P1-04NTC"));
 
     pinMode(SWITCH_BUILTIN, INPUT);  // Configure inbuilt switch
+
+    eStop = {modules.at("P1-16ND3"), 0};
+    startButton = {modules.at("P1-16ND3"),0};
 }
 
 void configureStations() {
