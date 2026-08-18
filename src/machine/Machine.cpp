@@ -79,3 +79,7 @@ Station* Machine::getNextStation(Station* station) {
     }
     return nullptr;
 }
+
+const std::vector<Station*>* Machine::getStations(){
+    return &stations;
+}

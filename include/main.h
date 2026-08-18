@@ -4,6 +4,7 @@
 #include "machine/Machine.h"
 #include "stations/Dispenser.h"
 #include "stations/Oven.h"
+#include "SerialBoolean.h"
 
 #include <P1AM.h>
 
@@ -23,6 +24,9 @@ void configureStations();
 
 channelLabel startButton;
 channelLabel eStop;
+
+SerialBoolean startSerial("start", EPHEMERAL);
+SerialBoolean eStopSerial("estop", PERSISTENT);
 
 std::map<std::string, uint8_t> modules;
 

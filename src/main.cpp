@@ -68,11 +68,11 @@ void setup() {
     Serial.println("Checking Correct Ordering");
 
     bool moduleNameError = false;
-    for(const auto& [name, slot] : modules){
-        moduleProps props = P1.readSlotProps(slot);
+    for(const auto& module : modules){
+        moduleProps props = P1.readSlotProps(module.second);
 
-        if(strcmp(name.c_str(), props.moduleName) != 0){
-            Serial.printf("Error: Configuration incorrect. Slot %d\r\nExpected: %s, Found: %s\r\n", slot, name, props.moduleName);
+        if(strcmp(module.first.c_str(), props.moduleName) != 0){
+            Serial.printf("Error: Configuration incorrect. Slot %d\r\nExpected: %s, Found: %s\r\n", module.second, module.first, props.moduleName);
             moduleNameError = true;
         }
     }
@@ -85,23 +85,28 @@ void setup() {
     Serial.println("Modules List Confirmed Correct");
 
     // Station Creation
-    Dispenser gc1("GC1", P1, gc1Config);
-    Dispenser choc("CHOC", P1, chocConfig);
-    Dispenser mm("MM", P1, mmConfig);
-    Oven oven("Oven", P1, ovenConfig);
-    Dispenser gc2("GC2", P1, gc2Config);
+    Dispenser* gc1= new Dispenser("GC1", P1, gc1Config);
+    Dispenser* choc = new Dispenser("CHOC", P1, chocConfig);
+    Dispenser* mm = new Dispenser("MM", P1, mmConfig);
+    Oven* oven = new Oven("Oven", P1, ovenConfig);
+    Dispenser* gc2 = new Dispenser("GC2", P1, gc2Config);
 
     Serial.println("Stations Instantiated");
 
-    std::vector<Station*> stations{&gc1, &choc, &mm, &oven, &gc2};
+    std::vector<Station*> stations{gc1, choc, mm, oven, gc2};
 
     // Machine Setup
     smoreBot = Machine(stations);
+
+    for(auto station : stations){
+        Serial.printf("Station: %s\r\n", station->name().c_str());
+    }
 
     Serial.println("Configuration Complete, Machine Ready");
 }
 
 void loop() {
+    // TODO: Debug hang/crash here
     smoreBot.update();
 
     // Connection Checking
@@ -121,13 +126,32 @@ void loop() {
 
     // EStop
     if (P1.readDiscrete(eStop)) {
+        Serial.println("E-STOPPED");
         smoreBot.eStop();
         // Machine will need to be power cycled to release E-Stop
     }
 
     // Start Button
-    if (P1.readDiscrete(startButton)) {
-        smoreBot.startCycle();
+    if (P1.readDiscrete(startButton) || startSerial.read()) {
+        if(smoreBot.startCycle()){
+            Serial.println("Started Cycle");
+        } else {
+            Serial.println("Machine Refused Cycle Start");
+            Serial.printf("Error: %s\r\n", (smoreBot.isRunning() ? "First Station Refused" : "Machine is not running"));
+        }
+    }
+
+    if (smoreBot.isRunning()){
+        digitalWrite(LED_BUILTIN, HIGH);
+    } else {
+        digitalWrite(LED_BUILTIN, LOW);
+    }
+
+    if(Serial.available()){
+        String str = Serial.readStringUntil('\n');
+        Serial.printf("Received: %s\r\n", str.c_str());
+        // Update our Serial Booleans
+        SerialBoolean::parseInput(str.c_str(), str.length());
     }
 }
 
@@ -150,6 +174,7 @@ void configureModules() {
     P1.configureModule(P1_04NTC_CONFIG, modules.at("P1-04NTC"));
 
     pinMode(SWITCH_BUILTIN, INPUT);  // Configure inbuilt switch
+    pinMode(LED_BUILTIN, OUTPUT); // Configure inbuilt LED (Non-RGB)
 
     eStop = {modules.at("P1-16ND3"), 0};
     startButton = {modules.at("P1-16ND3"),0};

@@ -34,9 +34,11 @@ class Machine{
 
         void eStop(); // Estops all stations, and holds the top-level machine
 
-        bool isRunning(); // True if the machine is running.
+        bool isRunning() {return running;}; // True if the machine is running.
 
         static Timer<5, millis> timer; //static timer object, max 5 concurrency, millisecond resolution
+
+        const std::vector<Station*>* getStations();
 
     private:
         Station* getNextStation(Station* station); // Returns ptr to the sequentially next station in the list.
