@@ -19,7 +19,7 @@
 class Machine{
     public:
         Machine() = default;
-        Machine(std::vector<Station*> stationsVec) : stations(stationsVec) {};
+        Machine(std::vector<Station*> stationsVec, std::vector<Station*> continuousStations = {}) : stations(stationsVec), continuousStations(continuousStations) {};
 
         void update(); // Updates machine, and all component stations
 
@@ -27,6 +27,9 @@ class Machine{
 
         int addStation(Station* station); //Adds a station, returns the index of that station
         void addStation(Station* station, int index); //Adds a station, at a specified index
+
+        int addContinuousStation(Station* station);
+        void addContinuousStation(Station* station, int index);
 
         bool startCycle(); // Starts a new cycle, starting with stations[0];
         void resume(); // Enables further work assignment, without starting a new cycle
@@ -39,11 +42,14 @@ class Machine{
         static Timer<5, millis> timer; //static timer object, max 5 concurrency, millisecond resolution
 
         const std::vector<Station*>* getStations();
+        const std::vector<Station*>* getContinuousStations();
 
     private:
         Station* getNextStation(Station* station); // Returns ptr to the sequentially next station in the list.
 
-        std::vector<Station*> stations; // All Stations in the machine
+        std::vector<Station*> stations; // All Stations in the machine assembly line
+
+        std::vector<Station*> continuousStations; // Stations that are run constantly while the machine is active. These stations completing work has no meaning, and will not automatically start another station
 
         std::vector<Station*> heldStations; // vector of stations that have completed work, but are currently unable to be deactivated
 

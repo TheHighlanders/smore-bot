@@ -4,6 +4,7 @@
 #include "machine/Machine.h"
 #include "stations/Dispenser.h"
 #include "stations/Oven.h"
+#include "stations/Belt.h"
 #include "SerialBoolean.h"
 
 #include <P1AM.h>
@@ -35,5 +36,7 @@ Dispenser::DispenserHWConfig chocConfig;
 Dispenser::DispenserHWConfig mmConfig;
 Oven::OvenHWConfig ovenConfig;
 Dispenser::DispenserHWConfig gc2Config;
+
+Belt::BeltHWConfig beltConfig;
 
 #endif

@@ -91,15 +91,21 @@ void setup() {
     Oven* oven = new Oven("Oven", P1, ovenConfig);
     Dispenser* gc2 = new Dispenser("GC2", P1, gc2Config);
 
+    Belt* belt = new Belt("BELT", P1, beltConfig);
+
     Serial.println("Stations Instantiated");
 
     std::vector<Station*> stations{gc1, choc, mm, oven, gc2};
+    std::vector<Station*> contStations{belt};
 
     // Machine Setup
-    smoreBot = Machine(stations);
+    smoreBot = Machine(stations, contStations);
 
     for(auto station : stations){
         Serial.printf("Station: %s\r\n", station->name().c_str());
+    }
+    for(auto station : contStations){
+        Serial.printf("Continuous Station: %s\r\n", station->name().c_str());
     }
 
     Serial.println("Configuration Complete, Machine Ready");
@@ -220,5 +226,9 @@ void configureStations() {
         {0, 0},                       // traySense
         0,                            // active
         0,                            // inactive
+    };
+
+    beltConfig = {
+        {modules.at("P1-08TRS"), 0}   // relay
     };
 }

@@ -1,14 +1,18 @@
 #include "machine/Machine.h"
-#include "machine/Station.h"
 
 #include <algorithm>
 
-Timer<5, millis> Machine::timer; // Define and allocate the timer.
+#include "machine/Station.h"
+
+Timer<5, millis> Machine::timer;  // Define and allocate the timer.
 
 void Machine::update() {
     if (!eStopped) {
         // Update all stations
         for (Station* station : stations) {
+            station->update();
+        }
+        for (Station* station : continuousStations){
             station->update();
         }
 
@@ -33,28 +37,43 @@ bool Machine::startCycle() {
     return false;
 }
 
-void Machine::stop() { running = false; }
+void Machine::stop() {if(running){
+    for(auto station : continuousStations){
+        station->deactivate();
+    }
+    running = false; 
+}}
 
-void Machine::resume() { running = true; }
+void Machine::resume() {
+    if (!running) {
+        for(auto station : continuousStations){
+            station->activate(this);
+        }
+        running = true;
+    }
+}
 
 void Machine::eStop() {
     eStopped = true;
     running = false;
-    for(Station* station : stations){
+    for (Station* station : stations) {
+        station->eStop();
+    }
+    for(Station* station : continuousStations){
         station->eStop();
     }
 }
 
-void Machine::onWorkCompleteCallback(Station* station){
+void Machine::onWorkCompleteCallback(Station* station) {
     Station* nextStation = getNextStation(station);
-    if(nextStation){
-        if(nextStation->free() && nextStation->activate(this)){
+    if (nextStation) {
+        if (nextStation->free() && nextStation->activate(this)) {
             station->deactivate();
             return;
         }
 
         heldStations.push_back(station);
-    } else{
+    } else {
         station->deactivate();
     }
 }
@@ -68,8 +87,19 @@ void Machine::addStation(Station* station, int index) {
     stations.insert(stations.begin() + index, station);
 }
 
+int Machine::addContinuousStation(Station* station) {
+    continuousStations.push_back(station);
+    return continuousStations.size() - 1;
+}
+
+void Machine::addContinuousStation(Station* station, int index) {
+    continuousStations.insert(continuousStations.begin() + index, station);
+}
+
 Station* Machine::getNextStation(Station* station) {
-    if(!station) {return nullptr;}
+    if (!station) {
+        return nullptr;
+    }
     auto it = std::find(stations.begin(), stations.end(), station);
     if (it != stations.end()) {
         auto next = std::next(it);
@@ -80,6 +110,6 @@ Station* Machine::getNextStation(Station* station) {
     return nullptr;
 }
 
-const std::vector<Station*>* Machine::getStations(){
-    return &stations;
-}
+const std::vector<Station*>* Machine::getStations() { return &stations; }
+
+const std::vector<Station*>* Machine::getContinuousStations() { return &continuousStations; }
