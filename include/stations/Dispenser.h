@@ -3,6 +3,7 @@
 
 #include "machine/Machine.h"
 #include "machine/Station.h"
+#include "SerialBoolean.h"
 #include "P1AM.h"
 
 class Dispenser : public Station{
@@ -17,7 +18,7 @@ class Dispenser : public Station{
         };
 
 
-        Dispenser(std::string name, P1AM& p1, DispenserHWConfig hwConfig) : Station(name), hardware(p1), config(hwConfig), dispensing(false) {
+        Dispenser(std::string name, P1AM& p1, DispenserHWConfig hwConfig) : Station(name), hardware(p1), config(hwConfig), dispensing(false) , detectSerial(name,true){
             pinMode(config.dispensePWM, OUTPUT);
         }; // Constructs a Dispenser station. Names must be unique.
 
@@ -38,6 +39,8 @@ class Dispenser : public Station{
         DispenserHWConfig config;
 
         bool dispensing;
+
+        SerialBoolean detectSerial;
 };
 
 #endif

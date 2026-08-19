@@ -8,6 +8,7 @@
 #include "SerialBoolean.h"
 
 #include <P1AM.h>
+#include <Adafruit_NeoPixel.h>
 
 #include <map>
 #include <string>
@@ -23,11 +24,17 @@ void configureModules();
 // Station configs populated here
 void configureStations();
 
+// Helper for control of inbuilt Neopixel
+void setRGB(int r, int g, int b);
+
 channelLabel startButton;
 channelLabel eStop;
 
 SerialBoolean startSerial("start", EPHEMERAL);
 SerialBoolean eStopSerial("estop", PERSISTENT);
+SerialBoolean statusSerial("status", EPHEMERAL);
+
+Adafruit_NeoPixel pixels(1, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 std::map<std::string, uint8_t> modules;
 

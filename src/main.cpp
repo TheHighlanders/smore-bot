@@ -37,6 +37,8 @@ void setup() {
     configureModules();
     configureStations();
 
+    setRGB(150, 150, 0);
+
     int numModules = modules.size();
     const char* moduleNames[numModules];
     moduleNames[0] = "";
@@ -88,7 +90,7 @@ void setup() {
     Dispenser* gc1= new Dispenser("GC1", P1, gc1Config);
     Dispenser* choc = new Dispenser("CHOC", P1, chocConfig);
     Dispenser* mm = new Dispenser("MM", P1, mmConfig);
-    Oven* oven = new Oven("Oven", P1, ovenConfig);
+    Oven* oven = new Oven("Oven", P1, ovenConfig, &smoreBot);
     Dispenser* gc2 = new Dispenser("GC2", P1, gc2Config);
 
     Belt* belt = new Belt("BELT", P1, beltConfig);
@@ -109,10 +111,11 @@ void setup() {
     }
 
     Serial.println("Configuration Complete, Machine Ready");
+    setRGB(0,150,0);
 }
 
 void loop() {
-    // TODO: Debug hang/crash here
+    smoreBot.tickTimers();
     smoreBot.update();
 
     // Connection Checking
@@ -120,36 +123,42 @@ void loop() {
     if (!P1.isBaseActive() || fault) {
         Serial.printf("Machine E-Stopping, Fault at %d\r\n", fault);
         smoreBot.eStop();
+        setRGB(255,0,0);
     }
 
     // Poll Buttons
     // Run switch
-    if (digitalRead(SWITCH_BUILTIN)) {
+    if (digitalRead(SWITCH_BUILTIN) && !smoreBot.isEmergencyStopped()) {
         smoreBot.resume();
     } else {
         smoreBot.stop();
     }
 
     // EStop
-    if (P1.readDiscrete(eStop)) {
+    if ((P1.readDiscrete(eStop) || eStopSerial.read()) && !smoreBot.isEmergencyStopped()) {
         Serial.println("E-STOPPED");
         smoreBot.eStop();
+        setRGB(255,0,0);
         // Machine will need to be power cycled to release E-Stop
+
     }
 
     // Start Button
     if (P1.readDiscrete(startButton) || startSerial.read()) {
-        if(smoreBot.startCycle()){
-            Serial.println("Started Cycle");
-        } else {
-            Serial.println("Machine Refused Cycle Start");
-            Serial.printf("Error: %s\r\n", (smoreBot.isRunning() ? "First Station Refused" : "Machine is not running"));
+        logUpdate("Starting Cycle");
+        if(!smoreBot.startCycle()){
+            logError("Machine Refused Cycle Start");
+            logError("Error: %s", (smoreBot.isRunning() ? "First Station Refused" : "Machine is not running"));
         }
     }
 
     if (smoreBot.isRunning()){
+        setRGB(150, 150, 0);
         digitalWrite(LED_BUILTIN, HIGH);
     } else {
+        if(!smoreBot.isEmergencyStopped()){
+            setRGB(0,255,0);
+        }
         digitalWrite(LED_BUILTIN, LOW);
     }
 
@@ -159,6 +168,15 @@ void loop() {
         // Update our Serial Booleans
         SerialBoolean::parseInput(str.c_str(), str.length());
     }
+
+    if(statusSerial.read()){
+        smoreBot.printStatus();
+    }
+}
+
+void setRGB(int r, int g, int b){
+    pixels.setPixelColor(0, pixels.Color(r, g, b)); // Set RGB LED to green (R, G, B)
+    pixels.show(); // Update RGB LED        
 }
 
 void configureMachine() {
@@ -181,54 +199,55 @@ void configureModules() {
 
     pinMode(SWITCH_BUILTIN, INPUT);  // Configure inbuilt switch
     pinMode(LED_BUILTIN, OUTPUT); // Configure inbuilt LED (Non-RGB)
+    pixels.begin();
 
-    eStop = {modules.at("P1-16ND3"), 0};
-    startButton = {modules.at("P1-16ND3"),0};
+    eStop = {modules.at("P1-16ND3"), 9};
+    startButton = {modules.at("P1-16ND3"),10};
 }
 
 void configureStations() {
     gc1Config = {
-        {modules.at("P1-15TD2"), 0},  // capture
-        PIN_A0,                       // dispense
-        {0, 0},                       // traySense
+        {modules.at("P1-15TD2"), 1},  // capture
+        0,                            // dispense GPIO 0
+        {modules.at("P1-16ND3"), 1},  // traySense
         0,                            // active
         0,                            // inactive
     };
 
     chocConfig = {
-        {modules.at("P1-15TD2"), 0},  // capture
-        PIN_A0,                       // dispense
-        {0, 0},                       // traySense
+        {modules.at("P1-15TD2"), 2},  // capture
+        1,                            // dispense GPIO 1
+        {modules.at("P1-16ND3"), 2},  // traySense
         0,                            // active
         0,                            // inactive
     };
 
     mmConfig = {
-        {modules.at("P1-15TD2"), 0},  // capture
-        PIN_A0,                       // dispense
-        {0, 0},                       // traySense
+        {modules.at("P1-15TD2"), 3},  // capture
+        2,                            // dispense GPIO 2
+        {modules.at("P1-16ND3"), 3},  // traySense
         0,                            // active
         0,                            // inactive
     };
     ovenConfig = {
-        {modules.at("P1-15TD2"), 0},  // relay
-        {0, 0},                       // entry
-        {0, 0},                       // exit
-        {0, 0},
-        {modules.at("P1-04NTC"), 0},  // thermocouple
-        0,                            // setpoint;
-        0,                            // deadzone
+        {modules.at("P1-08TRS"), 2},  // relay
+        {modules.at("P1-16ND3"), 4},  // entry
+        {modules.at("P1-16ND3"), 5},  // exit
+        {modules.at("P1-15TD2"), 4},  // capture
+        {modules.at("P1-04NTC"), 1},  // thermocouple
+        100,                            // setpoint;
+        5,                            // deadzone
     };
 
     gc2Config = {
-        {modules.at("P1-15TD2"), 0},  // capture
-        PIN_A0,                       // dispense
-        {0, 0},                       // traySense
+        {modules.at("P1-15TD2"), 5},  // capture
+        3,                            // dispense GPIO 3
+        {modules.at("P1-16ND3"), 6},  // traySense
         0,                            // active
         0,                            // inactive
     };
 
     beltConfig = {
-        {modules.at("P1-08TRS"), 0}   // relay
+        {modules.at("P1-08TRS"), 1}   // relay
     };
 }

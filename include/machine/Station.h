@@ -2,6 +2,7 @@
 #define STATION_h
 
 #include "machine/Machine.h"
+#include "Print.h"
 
 #include <string>
 #include <functional>

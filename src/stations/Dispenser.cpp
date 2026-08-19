@@ -4,17 +4,18 @@
 void Dispenser::update(){
     if(active){
         // Poll Sensor, and wait for tray to be captured
-        if(!dispensing && hardware.readDiscrete(config.traySense)){
+        if(!dispensing && (hardware.readDiscrete(config.traySense) || detectSerial.read())){
+            logUpdate("Update: %s: Captured Tray", name().c_str());
             // Tray captured, dispense
             analogWrite(config.dispensePWM, config.dispensePWMActive);
             dispensing = true;
-            Machine::timer.in(5000, dispenseTimerCallback, this);
+            Machine::timer.in(1000, dispenseTimerCallback, this);
         }
     }
 }
 
 bool Dispenser::activate(Machine* machine){
-    Serial.printf("Station %s active\r\n", name());
+    logInfo("Station %s active", name().c_str());
     m_machine = machine;
     active = true;
 
@@ -24,7 +25,7 @@ bool Dispenser::activate(Machine* machine){
 }
 
 void Dispenser::deactivate(){
-    Serial.printf("Station %s inactive\r\n", name());
+    logInfo("Station %s inactive", name().c_str());
     analogWrite(config.dispensePWM, config.dispensePWMInactive);
     hardware.writeDiscrete(0, config.captureSolenoid); // Release Tray
 
@@ -35,7 +36,8 @@ void Dispenser::deactivate(){
 bool Dispenser::dispenseTimerCallback(void* argument){
     //Used to allow callback function to be static
     Dispenser* self = static_cast<Dispenser*>(argument);
-
+    // Serial.printf("Update: %s: Completed Dispense\r\n", self->name().c_str());
+    logUpdate("Update: %s: Completed Dispense", self->name().c_str());
     // Write to the PWM to command dispenser in, update state, and fire complete callback
     analogWrite(self->config.dispensePWM, self->config.dispensePWMInactive);
     self->dispensing = false;
@@ -52,7 +54,7 @@ void Dispenser::eStop(){
     // Leave dispenser servo where it is.
 
     active = false;
-    Serial.printf("STATION %s EMERGENCY STOPPED\r\n", name());
+    logError("STATION %s EMERGENCY STOPPED", name().c_str());
 }
 
 std::string Dispenser::state() const{

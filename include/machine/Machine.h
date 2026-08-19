@@ -38,6 +38,11 @@ class Machine{
         void eStop(); // Estops all stations, and holds the top-level machine
 
         bool isRunning() {return running;}; // True if the machine is running.
+        bool isEmergencyStopped() {return eStopped;};
+
+        void printStatus(); // Prints Status to Serial;
+
+        void tickTimers() {timer.tick();};
 
         static Timer<5, millis> timer; //static timer object, max 5 concurrency, millisecond resolution
 

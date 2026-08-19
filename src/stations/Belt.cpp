@@ -4,7 +4,7 @@
 void Belt::update(){}
 
 bool Belt::activate(Machine* machine){
-    Serial.printf("Station %s active\r\n", name());
+    logInfo("Station %s active", name().c_str());
     m_machine = machine;
     active = true;
 
@@ -14,7 +14,7 @@ bool Belt::activate(Machine* machine){
 }
 
 void Belt::deactivate(){
-    Serial.printf("Station %s inactive\r\n", name());
+    logInfo("Station %s inactive", name().c_str());
     P1.writeDiscrete(0,config.beltRelay);
 
     active = false;
@@ -28,7 +28,7 @@ void Belt::eStop(){
     hardware.writeDiscrete(0, config.beltRelay);
 
     active = false;
-    Serial.printf("STATION %s EMERGENCY STOPPED\r\n", name());
+    logError("STATION %s EMERGENCY STOPPED", name().c_str());
 }
 
 std::string Belt::state() const{

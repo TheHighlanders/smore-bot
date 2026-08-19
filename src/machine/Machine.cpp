@@ -17,15 +17,25 @@ void Machine::update() {
         }
 
         if (running) {
+            std::vector<Station*> stillHeldStations;
             for (Station* station : heldStations) {
                 // These stations were not free to advance when they finished,
                 // they should be rechecked
+                logUpdate("Update: Machine: Retrying Held Station %s", station->name().c_str());
                 Station* next = getNextStation(station);
                 if (next && next->free()) {
-                    next->activate(this);
-                    station->deactivate();
+                    if(next->activate(this)){
+                        station->deactivate();
+                        logInfo("\tSuccess");
+                        continue;
+                    }
+                    logError("\tUnable to Activate Next");
+                } else {
+                    logError("\tNext Station Not Free");
                 }
+                stillHeldStations.push_back(station);
             }
+            heldStations = stillHeldStations;
         }
     }
 }
@@ -67,14 +77,18 @@ void Machine::eStop() {
 void Machine::onWorkCompleteCallback(Station* station) {
     Station* nextStation = getNextStation(station);
     if (nextStation) {
-        if (nextStation->free() && nextStation->activate(this)) {
-            station->deactivate();
-            return;
+        if(!nextStation->free()){
+            heldStations.push_back(station);
+        } else {
+            if(!nextStation->activate(this)){
+                heldStations.push_back(station);
+            } else {
+                station->deactivate();
+            }
         }
-
-        heldStations.push_back(station);
     } else {
         station->deactivate();
+        logUpdate("Cycle Complete");
     }
 }
 
@@ -108,6 +122,26 @@ Station* Machine::getNextStation(Station* station) {
         }
     }
     return nullptr;
+}
+
+void Machine::printStatus(){
+    std::vector<Station*> stations = *getStations();
+    std::vector<Station*> contStations = *getContinuousStations();
+    logUpdate("Status Report:");
+    logUpdate("Machine Status:");
+    logInfo("\t%s, Linear Stations: %d, Continuous Stations: %d%s", (isRunning() ? "Running" : "Not Running"), (getStations()->size()), (getContinuousStations()->size()), (isEmergencyStopped() ? ", E-Stopped" : ""));
+    logUpdate("Station Updates:");
+    if(stations.size()){
+        for(auto station : stations){
+            logInfo("\t%s: %s", station->name().c_str(), station->state().c_str());
+        }
+    }
+    if(contStations.size()){
+        for(auto station : contStations){
+            logInfo("\t%s: %s", station->name().c_str(), station->state().c_str());
+        }
+    }
+
 }
 
 const std::vector<Station*>* Machine::getStations() { return &stations; }
