@@ -21,8 +21,8 @@
 void setup() {
     Serial.begin(115200);
 
-    Serial.println("Smore Bot Online");
-    Serial.println("Waiting for Base Controller...");
+    logUpdate("Smore Bot Online");
+    logUpdate("Waiting for Base Controller...");
 
     // P1.init() returns true once all modules have finished initializing.
     // It will block here until modules are ready.
@@ -30,7 +30,7 @@ void setup() {
         ;
     }
 
-    Serial.println("Base Controller ready.");
+    logUpdate("Base Controller ready.");
 
     // Configurations
     configureMachine();
@@ -44,43 +44,43 @@ void setup() {
     moduleNames[0] = "";
     for (const auto& module : modules) {
         if(module.second > numModules){
-            Serial.println("Module Configured in a slot larger than the number of configured modules");
-            Serial.println("\tLikely Caused by missing a module in configureModules()");
-            Serial.println("\tResolve and Reboot");
-            Serial.printf("Number of modules configured: %d, Module listed in position: %d\r\n", numModules, module.second);
+            logError("Module Configured in a slot larger than the number of configured modules");
+            logError("\tLikely Caused by missing a module in configureModules()");
+            logError("\tResolve and Reboot");
+            logError("Number of modules configured: %d, Module listed in position: %d\r\n", numModules, module.second);
             return;
         }
         moduleNames[module.second - 1] =  // Subtract one to account for 1 indexing of slot numbers
             module.first.c_str();  // Convert to C Strings
     }
 
-    Serial.println("Checking Module Configuration");
+    logUpdate("Checking Module Configuration");
 
-    Serial.println("Configured Modules:");
+    logUpdate("Configured Modules:");
     for (auto name : moduleNames) {
-         Serial.println(name);
+         logInfo(name);
     }
 
     int found = P1.printModules();
     Serial.printf("Expected: %d, Actual: %d\r\n", numModules, found);
     if(found != numModules){
-        Serial.println("Discrepancy Detected");
+        logError("Discrepancy Detected");
     }
 
-    Serial.println("Checking Correct Ordering");
+    logUpdate("Checking Correct Ordering");
 
     bool moduleNameError = false;
     for(const auto& module : modules){
         moduleProps props = P1.readSlotProps(module.second);
 
         if(strcmp(module.first.c_str(), props.moduleName) != 0){
-            Serial.printf("Error: Configuration incorrect. Slot %d\r\nExpected: %s, Found: %s\r\n", module.second, module.first, props.moduleName);
+            logError("Error: Configuration incorrect. Slot %d\r\nExpected: %s, Found: %s\r\n", module.second, module.first, props.moduleName);
             moduleNameError = true;
         }
     }
 
     if(moduleNameError){
-        Serial.println("Resolve Module Configuration Ordering Errors");
+        logError("Resolve Module Configuration Ordering Errors");
         return;
     }
 
