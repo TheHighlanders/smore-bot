@@ -24,6 +24,10 @@ void Oven::update() {
             if (temperature < (config.tempSetpoint - config.tempDeadzone)) {
                 // If temperature is too low, activate relay
                 hardware.writeDiscrete(1, config.relaySolenoid);
+                if(atTemp){
+                    // Falling Edge Detection
+                    logUpdate("Update: %s: Heating", name().c_str());
+                }
                 atTemp = false;
             } else if (temperature >
                        (config.tempSetpoint + config.tempDeadzone)) {
@@ -36,7 +40,7 @@ void Oven::update() {
                 atTemp = true;
             }
         // }
-
+        // logInfo("Oven Temp: %f", temperature);
         if(tempSerial.read()){
             atTemp = true;
         }
@@ -53,6 +57,7 @@ bool Oven::activate(Machine* machine) {
     if (active) {
         hardware.writeDiscrete(1, config.trayholdSolenoid);
         logInfo("Station %s active", name().c_str());
+        Machine::timer.in(round(cookTime*1000), ovenTimerCallback, this); // Invoke ovenTimerCallback with `this` as arguement in cookTime seconds.
     } else {
         logError("Station %s unable to activate", name().c_str());
     }
@@ -65,7 +70,10 @@ void Oven::deactivate() {
     active = false;
 }
 
-bool Oven::free() const { return !active; }
+bool Oven::free() const { 
+    logInfo("Oven Not Free: %s %s %s", (active ? "Active" : "Inactive"), (atTemp ? "At Temp" : "Not At Temp"), (trayInside ? "Tray Inside" : "No Tray Inside"));
+    return !active && atTemp && !trayInside; 
+} // An Oven is free if it is at temperature, empty, and not otherwise active (should be redundant)
 
 void Oven::eStop() {
     // Depower Oven
@@ -76,6 +84,16 @@ void Oven::eStop() {
 
     active = false;
     logError("STATION %s EMERGENCY STOPPED", name().c_str());
+}
+
+bool Oven::ovenTimerCallback(void* argument){
+    //Used to allow callback function to be static
+    Oven* self = static_cast<Oven*>(argument);
+
+    logUpdate("Update: %s: Cook Complete", self->name().c_str());
+
+    self->m_machine->onWorkCompleteCallback(self);
+    return false;
 }
 
 std::string Oven::state() const { return std::string(active ? "active" : "inactive") + ", Oven Temp: " + std::to_string(round(temperature)); }

@@ -22,8 +22,10 @@ class Station{
         virtual bool activate(Machine* machine) = 0; // Activates a station to do work. Return indicates if it was accepted or not, fires Machine callback when done.
         virtual void deactivate() = 0; // Returns the station to an inactive state.
         virtual bool free() const = 0; // Is the station available to do work. (IE, has it been deactivated, and confirmed it is clear (if applicable))
+        // A station that is free() must be able successfully activate() at that time
 
         virtual void eStop() = 0; // Safes all hardware connected to the station.
+
     
         bool operator==(const Station* other) const {return name() == other->name();};
 

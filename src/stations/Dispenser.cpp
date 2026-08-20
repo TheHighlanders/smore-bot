@@ -15,13 +15,19 @@ void Dispenser::update(){
 }
 
 bool Dispenser::activate(Machine* machine){
-    logInfo("Station %s active", name().c_str());
-    m_machine = machine;
-    active = true;
 
-    hardware.writeDiscrete(1, config.captureSolenoid); // Capture Tray
+    if(free()){
+        // If the station is free, activate
+        logInfo("Station %s active", name().c_str());
+        m_machine = machine;
 
-    return true;
+        hardware.writeDiscrete(1, config.captureSolenoid); // Capture Tray
+        active = true;
+        return true;
+    }
+
+    // Station unable to activate
+    return false;
 }
 
 void Dispenser::deactivate(){
@@ -36,12 +42,14 @@ void Dispenser::deactivate(){
 bool Dispenser::dispenseTimerCallback(void* argument){
     //Used to allow callback function to be static
     Dispenser* self = static_cast<Dispenser*>(argument);
-    // Serial.printf("Update: %s: Completed Dispense\r\n", self->name().c_str());
+
     logUpdate("Update: %s: Completed Dispense", self->name().c_str());
+
     // Write to the PWM to command dispenser in, update state, and fire complete callback
     analogWrite(self->config.dispensePWM, self->config.dispensePWMInactive);
     self->dispensing = false;
     self->m_machine->onWorkCompleteCallback(self);
+
     return false; // Run timer once
 }
 

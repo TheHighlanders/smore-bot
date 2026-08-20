@@ -47,7 +47,7 @@ void setup() {
             logError("Module Configured in a slot larger than the number of configured modules");
             logError("\tLikely Caused by missing a module in configureModules()");
             logError("\tResolve and Reboot");
-            logError("Number of modules configured: %d, Module listed in position: %d\r\n", numModules, module.second);
+            logError("Number of modules configured: %d, Module listed in position: %d", numModules, module.second);
             return;
         }
         moduleNames[module.second - 1] =  // Subtract one to account for 1 indexing of slot numbers
@@ -62,7 +62,7 @@ void setup() {
     }
 
     int found = P1.printModules();
-    Serial.printf("Expected: %d, Actual: %d\r\n", numModules, found);
+    logInfo("Expected: %d, Actual: %d", numModules, found);
     if(found != numModules){
         logError("Discrepancy Detected");
     }
@@ -74,7 +74,7 @@ void setup() {
         moduleProps props = P1.readSlotProps(module.second);
 
         if(strcmp(module.first.c_str(), props.moduleName) != 0){
-            logError("Error: Configuration incorrect. Slot %d\r\nExpected: %s, Found: %s\r\n", module.second, module.first, props.moduleName);
+            logError("Error: Configuration incorrect. Slot %d\r\nExpected: %s, Found: %s", module.second, module.first, props.moduleName);
             moduleNameError = true;
         }
     }
@@ -84,7 +84,7 @@ void setup() {
         return;
     }
 
-    Serial.println("Modules List Confirmed Correct");
+    logUpdate("Modules List Confirmed Correct");
 
     // Station Creation
     Dispenser* gc1= new Dispenser("GC1", P1, gc1Config);
@@ -95,7 +95,7 @@ void setup() {
 
     Belt* belt = new Belt("BELT", P1, beltConfig);
 
-    Serial.println("Stations Instantiated");
+    logUpdate("Stations Instantiated");
 
     std::vector<Station*> stations{gc1, choc, mm, oven, gc2};
     std::vector<Station*> contStations{belt};
@@ -104,13 +104,13 @@ void setup() {
     smoreBot = Machine(stations, contStations);
 
     for(auto station : stations){
-        Serial.printf("Station: %s\r\n", station->name().c_str());
+        logInfo("Station: %s", station->name().c_str());
     }
     for(auto station : contStations){
-        Serial.printf("Continuous Station: %s\r\n", station->name().c_str());
+        logInfo("Continuous Station: %s", station->name().c_str());
     }
 
-    Serial.println("Configuration Complete, Machine Ready");
+    logUpdate("Configuration Complete, Machine Ready");
     setRGB(0,150,0);
 }
 
@@ -235,8 +235,9 @@ void configureStations() {
         {modules.at("P1-16ND3"), 5},  // exit
         {modules.at("P1-15TD2"), 4},  // capture
         {modules.at("P1-04NTC"), 1},  // thermocouple
-        100,                            // setpoint;
-        5,                            // deadzone
+        85,                          // setpoint;
+        1,                            // deadzone
+        5,                            // cook time
     };
 
     gc2Config = {

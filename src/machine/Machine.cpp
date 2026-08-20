@@ -24,8 +24,9 @@ void Machine::update() {
                 logUpdate("Update: Machine: Retrying Held Station %s", station->name().c_str());
                 Station* next = getNextStation(station);
                 if (next && next->free()) {
+                    station->deactivate();
+
                     if(next->activate(this)){
-                        station->deactivate();
                         logInfo("\tSuccess");
                         continue;
                     }
@@ -41,7 +42,7 @@ void Machine::update() {
 }
 
 bool Machine::startCycle() {
-    if (running && !eStopped) {
+    if (running && !eStopped && stations.size()) {
         return stations[0]->activate(this);
     }
     return false;
@@ -80,11 +81,11 @@ void Machine::onWorkCompleteCallback(Station* station) {
         if(!nextStation->free()){
             heldStations.push_back(station);
         } else {
-            if(!nextStation->activate(this)){
-                heldStations.push_back(station);
-            } else {
                 station->deactivate();
-            }
+                if(!nextStation->activate(this)){
+                    logError("Error: Station: %s Failed to activate after reporting free", nextStation->name().c_str());
+                };
+                
         }
     } else {
         station->deactivate();
