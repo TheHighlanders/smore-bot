@@ -17,7 +17,7 @@ class GcPusher : public Station {
     static const size_t kMoveCount = 6;
 
     struct Config {
-        channelLabel capture;    // Tray stop, kAbsent if the tray is not held
+        channelLabel capture;    // Tray stop
         channelLabel gripper;    // Energize to grip
         channelLabel lift;       // Energize to raise
         channelLabel translate;  // Energize to swing over the tray

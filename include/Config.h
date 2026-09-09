@@ -3,7 +3,6 @@
 
 #include <P1AM.h>
 
-#include "Channel.h"
 #include "machine/Station.h"
 #include "stations/GcPusher.h"
 #include "stations/LinearDispenser.h"
@@ -19,8 +18,8 @@ struct ModuleSlot {
     uint8_t slot;  // Slots are 1-indexed
 };
 
-// Expected base layout, verified against the base controller at boot. Drop a
-// module here if it is not fitted, and set its channels to kAbsent below.
+// Expected base layout, verified against the base controller at boot. Every
+// module listed here must be present or the machine refuses to start.
 const ModuleSlot kModules[] = {
     {"P1-16ND3", 1},   // Discrete in: start and e-stop buttons
     {"P1-04NTC", 2},   // Thermistor: oven temperature
@@ -67,7 +66,7 @@ const GcPusher::Config kGrahamCracker2 = {
 const Oven::Config kOven = {
     {5, 2},  // heater relay
     {4, 7},  // tray hold solenoid
-    {2, 1},  // thermistor, or kAbsent to run open-loop
+    {2, 1},  // thermistor
     85.0f,   // setpoint, degF
     1.0f,    // deadband, degF
     45000,   // cook time

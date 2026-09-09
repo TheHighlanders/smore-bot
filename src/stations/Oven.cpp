@@ -3,7 +3,6 @@
 #include <Arduino.h>
 #include <math.h>
 
-#include "Channel.h"
 #include "Log.h"
 
 // A reading outside this band means a failed probe or a failed SPI read, both
@@ -23,12 +22,7 @@ Station::Timing Oven::timingFor(const Config& config) {
 
 void Oven::poll(bool machineRunning) {
     if (!machineRunning) {
-        writeChannel(m_p1, 0, m_config.heater);
-        return;
-    }
-
-    if (!fitted(m_config.thermistor)) {
-        setAtTemp(true);  // No probe fitted: run the oven open-loop.
+        m_p1.writeDiscrete(0, m_config.heater);
         return;
     }
 
@@ -36,17 +30,17 @@ void Oven::poll(bool machineRunning) {
 
     if (!isfinite(m_temperature) || m_temperature < kMinPlausibleF ||
         m_temperature > kMaxPlausibleF) {
-        writeChannel(m_p1, 0, m_config.heater);
+        m_p1.writeDiscrete(0, m_config.heater);
         setAtTemp(false);
         logError("%s: implausible probe reading, heater off", name().c_str());
     } else if (m_temperature < m_config.setpointF - m_config.deadbandF) {
-        writeChannel(m_p1, 1, m_config.heater);
+        m_p1.writeDiscrete(1, m_config.heater);
         setAtTemp(false);
     } else {
         // Anywhere at or above the band is hot enough to cook, so an overshoot
         // cannot strand the line waiting for the oven to report ready.
         if (m_temperature > m_config.setpointF + m_config.deadbandF) {
-            writeChannel(m_p1, 0, m_config.heater);
+            m_p1.writeDiscrete(0, m_config.heater);
         }
         setAtTemp(true);
     }
@@ -56,19 +50,16 @@ void Oven::poll(bool machineRunning) {
     }
 }
 
-void Oven::onActivate() { writeChannel(m_p1, 1, m_config.hold); }
+void Oven::onActivate() { m_p1.writeDiscrete(1, m_config.hold); }
 
-void Oven::onRelease() { writeChannel(m_p1, 0, m_config.hold); }
+void Oven::onRelease() { m_p1.writeDiscrete(0, m_config.hold); }
 
 void Oven::onEStop() {
-    writeChannel(m_p1, 0, m_config.heater);
-    writeChannel(m_p1, 0, m_config.hold);
+    m_p1.writeDiscrete(0, m_config.heater);
+    m_p1.writeDiscrete(0, m_config.hold);
 }
 
 std::string Oven::detail() const {
-    if (!fitted(m_config.thermistor)) {
-        return "no probe";
-    }
     return std::to_string(static_cast<int>(m_temperature)) + "F";
 }
 
@@ -82,18 +73,14 @@ void Oven::setAtTemp(bool value) {
 
 void Oven::selfTest() {
     logUpdate("%s: tray hold solenoid", name().c_str());
-    writeChannel(m_p1, 1, m_config.hold);
+    m_p1.writeDiscrete(1, m_config.hold);
     delay(kPulseMs);
-    writeChannel(m_p1, 0, m_config.hold);
+    m_p1.writeDiscrete(0, m_config.hold);
 
     logUpdate("%s: heater relay", name().c_str());
-    writeChannel(m_p1, 1, m_config.heater);
+    m_p1.writeDiscrete(1, m_config.heater);
     delay(kPulseMs);
-    writeChannel(m_p1, 0, m_config.heater);
+    m_p1.writeDiscrete(0, m_config.heater);
 
-    if (!fitted(m_config.thermistor)) {
-        logInfo("\tthermistor: not fitted");
-    } else {
-        logInfo("\tthermistor: %d F", (int)m_p1.readTemperature(m_config.thermistor));
-    }
+    logInfo("\tthermistor: %d F", (int)m_p1.readTemperature(m_config.thermistor));
 }

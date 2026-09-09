@@ -5,7 +5,6 @@
 
 #include <Arduino.h>
 
-#include "Channel.h"
 #include "Log.h"
 #include "machine/Station.h"
 
@@ -17,15 +16,15 @@ class Belt : public Station {
 
     void selfTest() override {
         logUpdate("%s: belt relay", name().c_str());
-        writeChannel(m_p1, 1, m_relay);
+        m_p1.writeDiscrete(1, m_relay);
         delay(kPulseMs);
-        writeChannel(m_p1, 0, m_relay);
+        m_p1.writeDiscrete(0, m_relay);
     }
 
    protected:
-    void onActivate() override { writeChannel(m_p1, 1, m_relay); }
-    void onRelease() override { writeChannel(m_p1, 0, m_relay); }
-    void onEStop() override { writeChannel(m_p1, 0, m_relay); }
+    void onActivate() override { m_p1.writeDiscrete(1, m_relay); }
+    void onRelease() override { m_p1.writeDiscrete(0, m_relay); }
+    void onEStop() override { m_p1.writeDiscrete(0, m_relay); }
 
    private:
     P1AM& m_p1;

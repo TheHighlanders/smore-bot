@@ -1,7 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include <P1AM.h>
 
-#include "Channel.h"
 #include "Config.h"
 #include "Log.h"
 #include "SerialBoolean.h"
@@ -56,21 +55,15 @@ static bool actuatorsArmed = false;
 static uint32_t lastReport = 0;
 
 static const char* inputState(channelLabel channel) {
-    if (!fitted(channel)) {
-        return "n/a";
-    }
-    return readChannel(P1, channel) ? "ON" : "off";
+    return P1.readDiscrete(channel) ? "ON" : "off";
 }
 
 // One short line per report so a 5s cadence stays readable in the monitor.
 static void reportSensors() {
-    char oven[12] = "n/a";
-    if (fitted(config::kOven.thermistor)) {
-        snprintf(oven, sizeof(oven), "%dF", (int)P1.readTemperature(config::kOven.thermistor));
-    }
-    logInfo("%5lus  estop:%s  start:%s  run:%s  oven:%s", (unsigned long)(millis() / 1000),
+    logInfo("%5lus  estop:%s  start:%s  run:%s  oven:%dF", (unsigned long)(millis() / 1000),
             inputState(config::kEStopButton), inputState(config::kStartButton),
-            digitalRead(SWITCH_BUILTIN) ? "ON" : "off", oven);
+            digitalRead(SWITCH_BUILTIN) ? "ON" : "off",
+            (int)P1.readTemperature(config::kOven.thermistor));
 }
 
 static void runActuatorTest() {
@@ -121,9 +114,7 @@ void setup() {
         return;
     }
 
-    if (fitted(config::kOven.thermistor)) {
-        P1.configureModule(config::kThermistorSetup, config::kOven.thermistor.slot);
-    }
+    P1.configureModule(config::kThermistorSetup, config::kOven.thermistor.slot);
 
     static LinearDispenser grahamCracker1("GC1", P1, config::kGrahamCracker1);
     static LinearDispenser chocolate("CHOC", P1, config::kChocolate);
@@ -192,7 +183,7 @@ void loop() {
 
     bool baseFault = !P1.isBaseActive() || P1.checkConnection() != 0;
     bool eStopTyped = eStopCommand.read();  // One-shot: read before any ||
-    if (baseFault || readChannel(P1, config::kEStopButton) || eStopTyped) {
+    if (baseFault || P1.readDiscrete(config::kEStopButton) || eStopTyped) {
         logError("E-STOP: %s", baseFault ? "base controller fault" : "operator");
         machine.eStop();
         setRGB(150, 0, 0);
@@ -204,7 +195,7 @@ void loop() {
     // A press while the entry station is occupied is ignored, not queued: the
     // operator can lean on the button and trays still come out one per cycle.
     bool startTyped = startCommand.read();
-    bool startPressed = readChannel(P1, config::kStartButton) || startTyped;
+    bool startPressed = P1.readDiscrete(config::kStartButton) || startTyped;
     if (startPressed && !startWasPressed && !machine.startCycle()) {
         logInfo("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine held");
     }

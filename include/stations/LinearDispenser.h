@@ -11,7 +11,7 @@
 class LinearDispenser : public Station {
    public:
     struct Config {
-        channelLabel capture;  // Tray stop, kAbsent if the tray is not held
+        channelLabel capture;  // Tray stop
         channelLabel extend;   // Energize to drive the actuator out
         uint32_t extendMs;     // Travel out
         uint32_t dwellMs;      // Hold at full extension

@@ -2,7 +2,6 @@
 
 #include <Arduino.h>
 
-#include "Channel.h"
 #include "Log.h"
 
 namespace {
@@ -37,7 +36,7 @@ Station::Timing GcPusher::timingFor(const Config& config) {
     return Timing{config.transitMs, total, config.clearMs};
 }
 
-void GcPusher::onActivate() { writeChannel(m_p1, 1, m_config.capture); }
+void GcPusher::onActivate() { m_p1.writeDiscrete(1, m_config.capture); }
 
 void GcPusher::onArrive() {
     m_move = kMoveCount;  // Replay the sequence from the start
@@ -58,10 +57,10 @@ void GcPusher::onWork(uint32_t elapsedMs) {
 
 void GcPusher::onComplete() { parkArm(); }
 
-void GcPusher::onRelease() { writeChannel(m_p1, 0, m_config.capture); }
+void GcPusher::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
 
 void GcPusher::onEStop() {
-    writeChannel(m_p1, 0, m_config.capture);
+    m_p1.writeDiscrete(0, m_config.capture);
     parkArm();
 }
 
@@ -70,24 +69,24 @@ void GcPusher::applyMove(size_t index) {
         return;
     }
     m_move = index;
-    writeChannel(m_p1, kMoves[index].gripper, m_config.gripper);
-    writeChannel(m_p1, kMoves[index].lift, m_config.lift);
-    writeChannel(m_p1, kMoves[index].translate, m_config.translate);
+    m_p1.writeDiscrete(kMoves[index].gripper, m_config.gripper);
+    m_p1.writeDiscrete(kMoves[index].lift, m_config.lift);
+    m_p1.writeDiscrete(kMoves[index].translate, m_config.translate);
     logInfo("%s: %s", name().c_str(), kMoves[index].name);
 }
 
 void GcPusher::parkArm() {
     m_move = kMoveCount;
-    writeChannel(m_p1, 0, m_config.gripper);
-    writeChannel(m_p1, 0, m_config.lift);
-    writeChannel(m_p1, 0, m_config.translate);
+    m_p1.writeDiscrete(0, m_config.gripper);
+    m_p1.writeDiscrete(0, m_config.lift);
+    m_p1.writeDiscrete(0, m_config.translate);
 }
 
 void GcPusher::selfTest() {
     logUpdate("%s: tray stop", name().c_str());
-    writeChannel(m_p1, 1, m_config.capture);
+    m_p1.writeDiscrete(1, m_config.capture);
     delay(kPulseMs);
-    writeChannel(m_p1, 0, m_config.capture);
+    m_p1.writeDiscrete(0, m_config.capture);
 
     // Step the arm through the real sequence rather than pulsing solenoids
     // individually, so the moves are checked in an order the rig can survive.
