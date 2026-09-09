@@ -25,9 +25,12 @@ class GcPusher : public Station {
         // Hold time per move, in order: grab, lift, translate, lower, release,
         // return. Their sum is the station's work duration.
         uint32_t moveMs[kMoveCount];
+
+        uint32_t transitMs;  // Upstream release -> tray arrives here
+        uint32_t clearMs;    // Release -> tray fully past this station
     };
 
-    GcPusher(std::string name, P1AM& p1, Config config, uint32_t transitMs, uint32_t clearMs);
+    GcPusher(std::string name, P1AM& p1, Config config);
 
     void selfTest() override;
 
@@ -40,7 +43,7 @@ class GcPusher : public Station {
     void onEStop() override;
 
    private:
-    static Timing timingFor(const Config& config, uint32_t transitMs, uint32_t clearMs);
+    static Timing timingFor(const Config& config);
     void applyMove(size_t index);
     void parkArm();
 

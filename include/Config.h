@@ -7,6 +7,7 @@
 #include "machine/Station.h"
 #include "stations/GcPusher.h"
 #include "stations/LinearDispenser.h"
+#include "stations/MotorDispenser.h"
 #include "stations/Oven.h"
 
 // Every hardware address and dead-reckoning time lives here. Included once,
@@ -35,40 +36,43 @@ const char kThermistorSetup[] = {0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00}
 const channelLabel kEStopButton = {1, 9};
 const channelLabel kStartButton = {1, 10};
 
-// Dead-reckoned travel times, in milliseconds of belt motion.
+// Dead-reckoned times, in milliseconds of belt motion. Every station carries
+// its own, so they can be tuned one at a time:
 //
 //   transitMs  release upstream -> tray reaches this station's stop
 //   clearMs    release -> tray fully past this station, which is the only
 //              interlock protecting the station behind it
 //
-// Work duration is not set here: each station derives it from its own actuator
-// sequence, so the two cannot drift apart. CALIBRATE the rest against the real
-// belt before running product. The entry station has nothing upstream to
-// travel from, hence transitMs 0.
-const uint32_t kEntryTransitMs = 0;
-const uint32_t kTransitMs = 3000;
-const uint32_t kClearMs = 2000;
+// Work duration is never set directly: each station sums its own actuator
+// sequence, so timing cannot drift out of step with the moves performed. The
+// entry station has nothing upstream to travel from, hence transitMs 0.
+//
+// CALIBRATE all of these against the real belt before running product.
 
-const Station::Timing kOvenTiming = {kTransitMs, 45000, 2500};
+// capture, extend, then extend/dwell/retract, transit, clear.
+const LinearDispenser::Config kGrahamCracker1 = {{4, 1}, {4, 2}, 700, 400, 700, 0, 2000};
+const LinearDispenser::Config kChocolate = {{4, 3}, {4, 4}, 700, 400, 700, 3000, 2000};
 
-// moveMs order: grab, lift, translate, lower, release, return.
-const GcPusher::Config kGrahamCracker1 = {
-    {4, 1}, {4, 2}, {4, 3}, {4, 4}, {400, 600, 900, 600, 400, 900}};
+// TBD hardware: a hobby motor on a discrete output. capture, motor, then
+// run/settle, transit, clear.
+const MotorDispenser::Config kMarshmallow = {{4, 5}, {4, 6}, 1200, 600, 3000, 2000};
+
+// capture, gripper, lift, translate, then moveMs in the order
+// grab, lift, translate, lower, release, return, then transit, clear.
 const GcPusher::Config kGrahamCracker2 = {
-    {4, 10}, {4, 11}, {4, 12}, {4, 13}, {400, 600, 900, 600, 400, 900}};
-
-// capture, extend, then extend/dwell/retract times.
-const LinearDispenser::Config kChocolate = {{4, 5}, {4, 6}, 700, 400, 700};
-const LinearDispenser::Config kMarshmallow = {{4, 7}, {4, 8}, 700, 400, 700};
+    {4, 8}, {4, 9}, {4, 10}, {4, 11}, {400, 600, 900, 600, 400, 900}, 3000, 2000};
 
 // CALIBRATE the setpoint too. 85F is roughly ambient, so as shipped the heater
 // never fires and the oven reports ready immediately.
 const Oven::Config kOven = {
     {5, 2},  // heater relay
-    {4, 9},  // tray hold solenoid
+    {4, 7},  // tray hold solenoid
     {2, 1},  // thermistor, or kAbsent to run open-loop
     85.0f,   // setpoint, degF
     1.0f,    // deadband, degF
+    45000,   // cook time
+    3000,    // transit
+    2500,    // clear
 };
 
 const channelLabel kBeltRelay = {5, 1};

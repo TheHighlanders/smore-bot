@@ -9,6 +9,7 @@
 #include "stations/Belt.h"
 #include "stations/GcPusher.h"
 #include "stations/LinearDispenser.h"
+#include "stations/MotorDispenser.h"
 #include "stations/Oven.h"
 
 static Machine machine;
@@ -106,15 +107,11 @@ void setup() {
         P1.configureModule(config::kThermistorSetup, config::kOven.thermistor.slot);
     }
 
-    static GcPusher grahamCracker1("GC1", P1, config::kGrahamCracker1, config::kEntryTransitMs,
-                                   config::kClearMs);
-    static LinearDispenser chocolate("CHOC", P1, config::kChocolate, config::kTransitMs,
-                                     config::kClearMs);
-    static LinearDispenser marshmallow("MM", P1, config::kMarshmallow, config::kTransitMs,
-                                       config::kClearMs);
-    static Oven oven("OVEN", P1, config::kOven, config::kOvenTiming);
-    static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2, config::kTransitMs,
-                                   config::kClearMs);
+    static LinearDispenser grahamCracker1("GC1", P1, config::kGrahamCracker1);
+    static LinearDispenser chocolate("CHOC", P1, config::kChocolate);
+    static MotorDispenser marshmallow("MM", P1, config::kMarshmallow);
+    static Oven oven("OVEN", P1, config::kOven);
+    static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2);
     static Belt belt("BELT", P1, config::kBeltRelay);
 
     machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},

@@ -5,14 +5,12 @@
 #include "Channel.h"
 #include "Log.h"
 
-LinearDispenser::LinearDispenser(std::string name, P1AM& p1, Config config, uint32_t transitMs,
-                                 uint32_t clearMs)
-    : Station(name, timingFor(config, transitMs, clearMs)), m_p1(p1), m_config(config) {}
+LinearDispenser::LinearDispenser(std::string name, P1AM& p1, Config config)
+    : Station(name, timingFor(config)), m_p1(p1), m_config(config) {}
 
-Station::Timing LinearDispenser::timingFor(const Config& config, uint32_t transitMs,
-                                           uint32_t clearMs) {
+Station::Timing LinearDispenser::timingFor(const Config& config) {
     uint32_t stroke = config.extendMs + config.dwellMs + config.retractMs;
-    return Timing{transitMs, stroke, clearMs};
+    return Timing{config.transitMs, stroke, config.clearMs};
 }
 
 void LinearDispenser::onActivate() { writeChannel(m_p1, 1, m_config.capture); }

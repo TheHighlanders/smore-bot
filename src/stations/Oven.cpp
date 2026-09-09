@@ -11,11 +11,15 @@
 static const float kMinPlausibleF = 32.0f;
 static const float kMaxPlausibleF = 500.0f;
 
-Oven::Oven(std::string name, P1AM& p1, Config config, Timing timing)
-    : Station(name, timing),
+Oven::Oven(std::string name, P1AM& p1, Config config)
+    : Station(name, timingFor(config)),
       m_p1(p1),
       m_config(config),
       m_forceAtTemp(name + "temp", PERSISTENT) {}
+
+Station::Timing Oven::timingFor(const Config& config) {
+    return Timing{config.transitMs, config.cookMs, config.clearMs};
+}
 
 void Oven::poll(bool machineRunning) {
     if (!machineRunning) {

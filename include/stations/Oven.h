@@ -15,9 +15,12 @@ class Oven : public Station {
         channelLabel thermistor;  // Slot 0 to run without a temperature probe
         float setpointF;
         float deadbandF;
+        uint32_t cookMs;     // Time the tray is held in the oven
+        uint32_t transitMs;  // Upstream release -> tray arrives here
+        uint32_t clearMs;    // Release -> tray fully past this station
     };
 
-    Oven(std::string name, P1AM& p1, Config config, Timing timing);
+    Oven(std::string name, P1AM& p1, Config config);
 
     void selfTest() override;
 
@@ -31,6 +34,7 @@ class Oven : public Station {
     std::string detail() const override;
 
    private:
+    static Timing timingFor(const Config& config);
     void setAtTemp(bool value);
 
     P1AM& m_p1;
