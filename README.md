@@ -40,7 +40,7 @@ The line is `GC1 -> CHOC -> MM -> OVEN -> GC2`:
 | GC1 | `LinearDispenser` | One linear actuator: extend, dwell, retract |
 | CHOC | `LinearDispenser` | One linear actuator: extend, dwell, retract |
 | MM | `MotorDispenser` | One motor on a discrete output: run, settle (hardware TBD) |
-| OVEN | `Oven` | Heater relay, tray hold solenoid, optional thermistor |
+| OVEN | `Oven` | Heater relay, tray hold solenoid, optional thermistor. Disabled via `config::kOvenEnabled` |
 | GC2 | `GcPusher` | Three pneumatic solenoids: grab, lift, translate, lower, release, return |
 | BELT | `Belt` | One relay, runs continuously |
 
@@ -80,6 +80,9 @@ Every 5 seconds it prints one line of input state:
 ```
    35s  estop:off  start:ON  run:off  oven:72F
 ```
+
+`oven` reads `disabled` while `config::kOvenEnabled` is false; the temperature
+is not read at all in that case.
 
 The onboard LED is off while read only.
 
@@ -139,6 +142,12 @@ every module output de-energizes and the CPU halts until a power cycle.
 An e-stop deliberately stops all traffic to the base, so the watchdog expires
 and the base de-energizes everything itself. Clearing an e-stop therefore means
 a power cycle, and the heater does not depend on a single write landing.
+
+Set `config::kOvenEnabled` to `false` in `include/Config.h` to take the oven
+out of testing entirely. It is `false` as shipped. Disabled, the oven never
+writes the heater or hold solenoid and never reads the thermistor, and always
+reports ready so the rest of the line runs without stalling behind it. The
+`OVENtemp` command has no effect while disabled.
 
 The oven rejects readings outside 32-500 F. A burnt-out probe reads NaN and a
 failed SPI read returns 0.0, both of which would otherwise look like a cold

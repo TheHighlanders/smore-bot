@@ -10,9 +10,12 @@
 class Oven : public Station {
    public:
     struct Config {
+        // False: never touch the heater, hold solenoid, or thermistor, and
+        // always report ready so the station cannot block the line.
+        bool enabled;
         channelLabel heater;      // Heater relay
         channelLabel hold;        // Tray hold solenoid
-        channelLabel thermistor;  // Slot 0 to run without a temperature probe
+        channelLabel thermistor;
         float setpointF;
         float deadbandF;
         uint32_t cookMs;     // Time the tray is held in the oven
@@ -30,7 +33,7 @@ class Oven : public Station {
     void onRelease() override;
     void onEStop() override;
 
-    bool ready() const override { return m_atTemp; }
+    bool ready() const override { return !m_config.enabled || m_atTemp; }
     std::string detail() const override;
 
    private:

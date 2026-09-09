@@ -58,7 +58,9 @@ bool begin() {
         return false;
     }
 
-    P1.configureModule(config::kThermistorSetup, config::kOven.thermistor.slot);
+    if (config::kOvenEnabled) {
+        P1.configureModule(config::kThermistorSetup, config::kOven.thermistor.slot);
+    }
 
     static LinearDispenser grahamCracker1("GC1", P1, config::kGrahamCracker1);
     static LinearDispenser chocolate("CHOC", P1, config::kChocolate);
