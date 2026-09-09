@@ -5,7 +5,8 @@
 
 #include "Channel.h"
 #include "machine/Station.h"
-#include "stations/Dispenser.h"
+#include "stations/GcPusher.h"
+#include "stations/LinearDispenser.h"
 #include "stations/Oven.h"
 
 // Every hardware address and dead-reckoning time lives here. Included once,
@@ -37,27 +38,34 @@ const channelLabel kStartButton = {1, 10};
 // Dead-reckoned travel times, in milliseconds of belt motion.
 //
 //   transitMs  release upstream -> tray reaches this station's stop
-//   workMs     dispense or cook duration once the tray is here
 //   clearMs    release -> tray fully past this station, which is the only
 //              interlock protecting the station behind it
 //
-// CALIBRATE these against the real belt before running product. The entry
-// station has no upstream station to travel from, hence transitMs 0.
-const Station::Timing kEntryTiming = {0, 1500, 2000};
-const Station::Timing kDispenserTiming = {3000, 1500, 2000};
-const Station::Timing kOvenTiming = {3000, 45000, 2500};
+// Work duration is not set here: each station derives it from its own actuator
+// sequence, so the two cannot drift apart. CALIBRATE the rest against the real
+// belt before running product. The entry station has nothing upstream to
+// travel from, hence transitMs 0.
+const uint32_t kEntryTransitMs = 0;
+const uint32_t kTransitMs = 3000;
+const uint32_t kClearMs = 2000;
 
-// Servo pins avoid 0 and 1, which are Serial2 on the P1AM-200.
-const Dispenser::Config kGrahamCracker1 = {{4, 1}, 2, 0, 255};
-const Dispenser::Config kChocolate = {{4, 2}, 3, 0, 255};
-const Dispenser::Config kMarshmallow = {{4, 3}, 4, 0, 255};
-const Dispenser::Config kGrahamCracker2 = {{4, 5}, 5, 0, 255};
+const Station::Timing kOvenTiming = {kTransitMs, 45000, 2500};
+
+// moveMs order: grab, lift, translate, lower, release, return.
+const GcPusher::Config kGrahamCracker1 = {
+    {4, 1}, {4, 2}, {4, 3}, {4, 4}, {400, 600, 900, 600, 400, 900}};
+const GcPusher::Config kGrahamCracker2 = {
+    {4, 10}, {4, 11}, {4, 12}, {4, 13}, {400, 600, 900, 600, 400, 900}};
+
+// capture, extend, then extend/dwell/retract times.
+const LinearDispenser::Config kChocolate = {{4, 5}, {4, 6}, 700, 400, 700};
+const LinearDispenser::Config kMarshmallow = {{4, 7}, {4, 8}, 700, 400, 700};
 
 // CALIBRATE the setpoint too. 85F is roughly ambient, so as shipped the heater
 // never fires and the oven reports ready immediately.
 const Oven::Config kOven = {
     {5, 2},  // heater relay
-    {4, 4},  // tray hold solenoid
+    {4, 9},  // tray hold solenoid
     {2, 1},  // thermistor, or kAbsent to run open-loop
     85.0f,   // setpoint, degF
     1.0f,    // deadband, degF

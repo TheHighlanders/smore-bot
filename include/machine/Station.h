@@ -48,6 +48,10 @@ class Station {
     virtual void onActivate() {}  // Tray released upstream: extend the stop
     virtual void onArrive() {}    // Tray is here: start working
     virtual void onComplete() {}  // Work finished: park actuators
+
+    // Every tick while Working, with time elapsed in this phase. Stations whose
+    // work is a sequence of actuator moves drive it from here.
+    virtual void onWork(uint32_t /*elapsedMs*/) {}
     virtual void onRelease() {}   // Let the tray go
     virtual void onEStop() = 0;   // De-energize everything
 

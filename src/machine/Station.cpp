@@ -19,6 +19,7 @@ void Station::update(uint32_t clock, bool machineRunning) {
             break;
 
         case Phase::Working:
+            onWork(elapsed(clock));
             if (m_timing.workMs != kContinuous && elapsed(clock) >= m_timing.workMs) {
                 onComplete();
                 enter(Phase::Done, clock);

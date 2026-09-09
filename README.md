@@ -30,8 +30,26 @@ Idle --activate--> Arriving --transitMs--> Working --workMs--> Done
 Done --deactivate--> Clearing --clearMs--> Idle
 ```
 
-Subclasses only supply hardware actions (`onActivate`, `onArrive`, `onComplete`,
-`onRelease`, `onEStop`). All timing lives in the base class.
+Subclasses only supply hardware actions (`onActivate`, `onArrive`, `onWork`,
+`onComplete`, `onRelease`, `onEStop`). All timing lives in the base class.
+
+The line is `GC1 -> CHOC -> MM -> OVEN -> GC2`:
+
+| Station | Type | Hardware |
+| --- | --- | --- |
+| GC1, GC2 | `GcPusher` | Three pneumatic solenoids: grab, lift, translate, lower, release, return |
+| CHOC, MM | `LinearDispenser` | One linear actuator: extend, dwell, retract |
+| OVEN | `Oven` | Heater relay, tray hold solenoid, optional thermistor |
+| BELT | `Belt` | One relay, runs continuously |
+
+`GcPusher` and `LinearDispenser` derive their work duration from their own
+actuator sequence, so a station's timing cannot drift out of step with the
+moves it actually performs.
+
+Several trays can be in the line at once. A station only accepts a tray when it
+is `Idle`, and the machine advances downstream-first, so trays cannot collide.
+Pressing start while the entry station is occupied is ignored rather than
+queued: holding the button down still produces one tray per cycle.
 
 Times are measured against the **belt clock**, which advances only while the
 machine is running. Holding the machine stops the belt and stops the clock

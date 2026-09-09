@@ -7,7 +7,8 @@
 #include "SerialBoolean.h"
 #include "machine/Machine.h"
 #include "stations/Belt.h"
-#include "stations/Dispenser.h"
+#include "stations/GcPusher.h"
+#include "stations/LinearDispenser.h"
 #include "stations/Oven.h"
 
 static Machine machine;
@@ -105,11 +106,15 @@ void setup() {
         P1.configureModule(config::kThermistorSetup, config::kOven.thermistor.slot);
     }
 
-    static Dispenser grahamCracker1("GC1", P1, config::kGrahamCracker1, config::kEntryTiming);
-    static Dispenser chocolate("CHOC", P1, config::kChocolate, config::kDispenserTiming);
-    static Dispenser marshmallow("MM", P1, config::kMarshmallow, config::kDispenserTiming);
+    static GcPusher grahamCracker1("GC1", P1, config::kGrahamCracker1, config::kEntryTransitMs,
+                                   config::kClearMs);
+    static LinearDispenser chocolate("CHOC", P1, config::kChocolate, config::kTransitMs,
+                                     config::kClearMs);
+    static LinearDispenser marshmallow("MM", P1, config::kMarshmallow, config::kTransitMs,
+                                       config::kClearMs);
     static Oven oven("OVEN", P1, config::kOven, config::kOvenTiming);
-    static Dispenser grahamCracker2("GC2", P1, config::kGrahamCracker2, config::kDispenserTiming);
+    static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2, config::kTransitMs,
+                                   config::kClearMs);
     static Belt belt("BELT", P1, config::kBeltRelay);
 
     machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
@@ -167,13 +172,12 @@ void loop() {
 
     machine.run(digitalRead(SWITCH_BUILTIN) == HIGH);
 
+    // A press while the entry station is occupied is ignored, not queued: the
+    // operator can lean on the button and trays still come out one per cycle.
     bool startTyped = startCommand.read();
     bool startPressed = readChannel(P1, config::kStartButton) || startTyped;
-    if (startPressed && !startWasPressed) {
-        if (!machine.startCycle()) {
-            logError("Cycle refused: %s",
-                     machine.isRunning() ? "first station busy" : "machine held");
-        }
+    if (startPressed && !startWasPressed && !machine.startCycle()) {
+        logInfo("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine held");
     }
     startWasPressed = startPressed;
 
