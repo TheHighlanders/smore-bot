@@ -11,7 +11,8 @@ class FakeStation : public Station {
    public:
     FakeStation(std::string name, Timing timing) : Station(name, timing) {}
 
-    void selfTest() override {}
+    int selfTests = 0;
+    void selfTest() override { selfTests++; }
 
     int activations = 0;
     int completions = 0;
