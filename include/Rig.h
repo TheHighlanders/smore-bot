@@ -1,6 +1,8 @@
 #ifndef RIG_H
 #define RIG_H
 
+#include <Arduino.h>
+
 #include "machine/Machine.h"
 
 // Hardware shared by the machine and bring-up builds: base controller start-up,
@@ -10,10 +12,10 @@ namespace rig {
 bool begin();  // False if the base does not match Config.h
 Machine& machine();
 
-void pollSerial();
+void pollSerial();               // Dispatches a line to the registered SerialBooleans
+bool readLine(String& line);     // True once a full line is available, trimmed
 
 bool runSwitchOn();
-bool eStopPressed();
 bool startEdge();  // True once per press, so a held button repeats nothing
 
 }  // namespace rig

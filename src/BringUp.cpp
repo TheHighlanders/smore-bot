@@ -4,20 +4,17 @@
 #include "Config.h"
 #include "Log.h"
 #include "Rig.h"
-#include "SerialBoolean.h"
 
 // Bring-up build, for checking wiring before the machine runs. Never starts
 // the machine and never starts the watchdog, so nothing needs to pet it.
 //
-// Powers up read only. Actuators move only after 'actuators' arms them, and
-// then only on a press of the start button.
+// Type 'actuators' to arm, then a station's name to run its sequence.
+// Buttons and other inputs are only ever reported here, never acted on.
 
 static const uint32_t kReportMs = 5000;
 
-static SerialBoolean actuatorsCommand("actuators", PERSISTENT);
-
 static bool ready = false;
-static bool actuatorsArmed = false;
+static bool armed = false;
 static uint32_t lastReport = 0;
 
 static const char* inputState(channelLabel channel) {
@@ -30,39 +27,41 @@ static void reportInputs() {
     if (config::kOvenEnabled) {
         snprintf(oven, sizeof(oven), "%dF", (int)P1.readTemperature(config::kOven.thermistor));
     }
-    logLine("%5lus  estop:%s  start:%s  run:%s  oven:%s", (unsigned long)(millis() / 1000),
-            inputState(config::kEStopButton), inputState(config::kStartButton),
+    logLine("%5lus  start:%s  mmExit:%s  run:%s  oven:%s", (unsigned long)(millis() / 1000),
+            inputState(config::kStartButton), inputState(config::kMarshmallow.exitSensor),
             rig::runSwitchOn() ? "ON" : "off", oven);
+}
+
+static void handleLine(const String& line) {
+    if (line == "actuators") {
+        armed = !armed;
+        logLine("Actuators %s", armed ? "ARMED" : "disabled, read only");
+        return;
+    }
+    if (!armed) {
+        logLine("Read only. Type 'actuators' to arm, then a station name.");
+        return;
+    }
+    if (!rig::machine().selfTestNamed(line.c_str())) {
+        logLine("Unknown station: %s", line.c_str());
+    }
 }
 
 void setup() {
     ready = rig::begin();
     if (ready) {
-        logLine("Bring-up, read only. 'actuators' arms them, start button pulses them.");
+        logLine("Bring-up, read only. 'actuators' arms them, then type a station name.");
     }
 }
 
 void loop() {
-    rig::pollSerial();
+    String line;
+    if (rig::readLine(line)) {
+        handleLine(line);
+    }
 
     if (!ready) {
         return;
-    }
-
-    bool armedNow = actuatorsCommand.read();
-    if (armedNow != actuatorsArmed) {
-        actuatorsArmed = armedNow;
-        logLine("Actuators %s", actuatorsArmed ? "ARMED" : "disabled, read only");
-    }
-
-    if (rig::startEdge()) {
-        if (actuatorsArmed) {
-            logLine("Pulsing actuators");
-            rig::machine().selfTest();
-            logLine("Actuator test complete");
-        } else {
-            logLine("Read only. Type 'actuators' to arm, then press start.");
-        }
     }
 
     if (millis() - lastReport >= kReportMs) {
@@ -70,5 +69,5 @@ void loop() {
         reportInputs();
     }
 
-    digitalWrite(LED_BUILTIN, actuatorsArmed ? HIGH : LOW);
+    digitalWrite(LED_BUILTIN, armed ? HIGH : LOW);
 }

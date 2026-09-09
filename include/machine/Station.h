@@ -49,8 +49,11 @@ class Station {
     virtual void onComplete() {}  // Work finished: park actuators
 
     // Every tick while Working, with time elapsed in this phase. Stations whose
-    // work is a sequence of actuator moves drive it from here.
-    virtual void onWork(uint32_t /*elapsedMs*/) {}
+    // work is a sequence of actuator moves drive it from here. Return true to
+    // finish immediately (e.g. a sensor confirms the product has left); a
+    // station that only needs a timer can ignore elapsedMs and let workMs
+    // expire instead.
+    virtual bool onWork(uint32_t /*elapsedMs*/) { return false; }
     virtual void onRelease() {}   // Let the tray go
     virtual void onEStop() = 0;   // De-energize everything
 
