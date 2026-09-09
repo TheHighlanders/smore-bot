@@ -148,20 +148,6 @@ void continuous_station_never_completes() {
     TEST_ASSERT_TRUE(line.belt.occupied);
 }
 
-void skip_advances_the_furthest_along_station() {
-    Line line;
-    line.machine.run(true);
-    line.machine.startCycle();
-    line.run(100);
-
-    TEST_ASSERT_TRUE(line.machine.skipStation());
-    line.run(10);
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, line.gc1.completions, "skip did not finish the work");
-
-    line.run(200000);
-    TEST_ASSERT_EQUAL_INT(1, line.gc2.completions);
-}
-
 void belt_clock_survives_millis_rollover() {
     Line line;
     g_millis = 0xFFFFFF00u;  // ~256 ms before rollover
@@ -184,7 +170,6 @@ int main() {
     RUN_TEST(estop_safes_every_station_and_latches);
     RUN_TEST(belt_restarts_across_repeated_holds);
     RUN_TEST(continuous_station_never_completes);
-    RUN_TEST(skip_advances_the_furthest_along_station);
     RUN_TEST(belt_clock_survives_millis_rollover);
     return UNITY_END();
 }

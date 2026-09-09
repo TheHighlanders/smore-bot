@@ -29,8 +29,7 @@ class Station {
     void update(uint32_t clock, bool machineRunning);
 
     bool activate(uint32_t clock);        // Rejected unless free()
-    void deactivate(uint32_t clock);      // Release the tray and start clearing
-    bool forceComplete(uint32_t clock);   // End work early; false if not working
+    void deactivate(uint32_t clock);  // Release the tray and start clearing
     void eStop(uint32_t clock);
 
     // Bring-up: pulse this station's actuators and report its inputs.

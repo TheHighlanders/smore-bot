@@ -17,7 +17,6 @@ class Machine {
 
     void update();
     bool startCycle();
-    bool skipStation();  // Force the furthest-along station to finish
 
     void run(bool enable);  // Enable/hold work assignment
     void eStop();
