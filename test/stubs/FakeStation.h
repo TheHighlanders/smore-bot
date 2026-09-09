@@ -24,6 +24,10 @@ class FakeStation : public Station {
     // Stands in for a gate like the oven's "at temperature".
     bool readyGate = true;
 
+    // Stands in for a sensor like MM's exit sensor: set true to make onWork()
+    // report completion immediately, before workMs elapses.
+    bool workDone = false;
+
     std::vector<std::string> events;
 
    protected:
@@ -36,9 +40,10 @@ class FakeStation : public Station {
         events.push_back("activate");
     }
     void onArrive() override { events.push_back("arrive"); }
-    void onWork(uint32_t elapsedMs) override {
+    bool onWork(uint32_t elapsedMs) override {
         works++;
         lastWorkElapsed = elapsedMs;
+        return workDone;
     }
     void onComplete() override {
         completions++;

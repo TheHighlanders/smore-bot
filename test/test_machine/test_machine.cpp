@@ -218,6 +218,22 @@ void activate_is_rejected_unless_free() {
     TEST_ASSERT_TRUE(line.machine.startCycle());
 }
 
+// MM completes on its exit sensor, not a fixed timer: set the stand-in sensor
+// mid-work and confirm the station finishes right away instead of running out
+// the clock.
+void work_completes_early_when_the_sensor_reports_done() {
+    Line line;
+    line.machine.run(true);
+    line.machine.startCycle();
+    line.run(200);  // Partway into GC1's 1500 ms of work
+
+    line.gc1.workDone = true;
+    line.run(10);
+
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, line.gc1.completions, "did not complete on the sensor");
+    TEST_ASSERT_TRUE_MESSAGE(line.gc1.lastWorkElapsed < 1500, "waited for the timer instead");
+}
+
 void belt_clock_survives_millis_rollover() {
     Line line;
     g_millis = 0xFFFFFF00u;  // ~256 ms before rollover
@@ -245,6 +261,7 @@ int main() {
     RUN_TEST(hooks_fire_in_order);
     RUN_TEST(work_hook_runs_through_the_work_phase);
     RUN_TEST(activate_is_rejected_unless_free);
+    RUN_TEST(work_completes_early_when_the_sensor_reports_done);
     RUN_TEST(belt_clock_survives_millis_rollover);
     return UNITY_END();
 }
