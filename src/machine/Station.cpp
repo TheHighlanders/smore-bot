@@ -67,16 +67,6 @@ void Station::deactivate(uint32_t clock) {
     logInfo("%s: released", m_name.c_str());
 }
 
-bool Station::forceComplete(uint32_t clock) {
-    if (m_phase != Phase::Arriving && m_phase != Phase::Working) {
-        return false;
-    }
-    onComplete();
-    enter(Phase::Done, clock);
-    logUpdate("%s: forced complete", m_name.c_str());
-    return true;
-}
-
 void Station::eStop(uint32_t clock) {
     onEStop();
     enter(Phase::Idle, clock);

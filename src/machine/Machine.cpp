@@ -56,15 +56,6 @@ bool Machine::startCycle() {
     return m_line.front()->activate(m_clock);
 }
 
-bool Machine::skipStation() {
-    for (size_t i = m_line.size(); i-- > 0;) {
-        if (m_line[i]->forceComplete(m_clock)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void Machine::run(bool enable) {
     if (m_eStopped || enable == m_running) {
         return;

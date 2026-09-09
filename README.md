@@ -49,6 +49,11 @@ timings are tuned one station at a time. Work duration is never configured
 directly: every station sums its own actuator sequence, so a station's phase
 duration cannot drift out of step with the moves it actually performs.
 
+`src/Rig.cpp` holds everything both builds share: base start-up, module
+verification, the station line, and the operator inputs. `src/main.cpp` and
+`src/BringUp.cpp` are the two entry points, and `build_src_filter` picks one per
+environment, so neither build carries the other's code.
+
 Several trays can be in the line at once. A station only accepts a tray when it
 is `Idle`, and the machine advances downstream-first, so trays cannot collide.
 Pressing start while the entry station is occupied is ignored rather than
@@ -76,16 +81,18 @@ Every 5 seconds it prints one line of input state:
    35s  estop:off  start:ON  run:off  oven:72F
 ```
 
-The LED is blue while read only.
+The onboard LED is off while read only.
 
 To move hardware, arm the actuators first:
 
 | Command | Effect |
 | --- | --- |
-| `actuators` | Toggle the actuator arm. Off at power-up; the LED turns magenta when armed |
-| `test` | Pulse every actuator once, in sequence. Refused while read only |
+| `actuators` | Toggle the actuator arm. Off at power-up; the LED lights when armed |
 
-`test` drives each station in turn, one actuator at a time. `GcPusher` steps
+With the actuators armed, **press the start button** to pulse every actuator
+once, in sequence. Pressing it while read only just prints a reminder.
+
+The sweep drives each station in turn, one actuator at a time. `GcPusher` steps
 through its real pick-and-place order rather than firing solenoids
 individually, so the moves happen in an order the rig can survive.
 
@@ -97,25 +104,31 @@ the machine.
 ## Calibrating
 
 All hardware addresses and times are in `include/Config.h`; station order is in
-`src/main.cpp`, where the stations are built.
+`src/Rig.cpp`, where the stations are built.
 
 1. Flip the run switch and confirm the belt starts.
 2. Time a tray from one station's release to the next station's stop. That is
    `transitMs` for the downstream station.
 3. Time from release until the tray is fully past a station. That is `clearMs`.
-4. Set `workMs` to the dispense or cook duration.
+4. Set each station's own move times; its work duration is their sum.
 
 Type `status` into the serial monitor at any time for the phase of every station
 and the current belt clock.
+
+## Operator inputs
+
+Start and e-stop are discrete inputs, wired to the `P1-16ND3` at the channels in
+`config::kEStopButton` and `config::kStartButton`. Start is edge triggered, so
+holding it repeats nothing. Run/hold is the faceplate switch.
+
+There is no way to abort a cycle in progress: an e-stop safes the machine, and
+anything short of that lets the sequence finish.
 
 ## Serial commands
 
 | Command | Effect |
 | --- | --- |
-| `start` | Start a cycle, same as the start button |
-| `estop` | Latch an emergency stop |
 | `status` | Print machine and station state |
-| `skip` | Force the furthest-along station to finish, for testing without waiting |
 | `OVENtemp` | Toggle the oven's thermistor out of the loop |
 
 ## Safety
