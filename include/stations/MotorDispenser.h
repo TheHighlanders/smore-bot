@@ -14,7 +14,7 @@
 class MotorDispenser : public Station {
    public:
     struct Config {
-        channelLabel capture;  // Tray stop, kAbsent if the tray is not held
+        channelLabel capture;  // Tray stop
         channelLabel motor;    // Energize to run the dispenser motor
         uint32_t runMs;        // Motor on
         uint32_t settleMs;     // Motor off, product falling

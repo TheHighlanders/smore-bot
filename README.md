@@ -77,7 +77,7 @@ Every 5 seconds it prints one line of input state:
    35s  estop:off  start:ON  run:off  oven:72F
 ```
 
-`n/a` means the channel is marked `kAbsent`. The LED is blue while read only.
+The LED is blue while read only.
 
 To move hardware, arm the actuators first:
 
@@ -119,15 +119,6 @@ and the current belt clock.
 | `skip` | Force the furthest-along station to finish, for testing without waiting |
 | `OVENtemp` | Toggle the oven's thermistor out of the loop |
 
-## Running without a module
-
-Set a `channelLabel` to `kAbsent` (slot 0, from `include/Channel.h`) to mark
-hardware as not fitted. Inputs read false and outputs are dropped. Remove the
-module from `config::kModules` as well, or the boot check will refuse to start.
-
-Setting `kOven.thermistor` to `kAbsent` runs the oven open-loop; it will report
-ready immediately rather than waiting to reach setpoint.
-
 ## Safety
 
 The base controller watchdog runs in `HOLD` mode: if it stops being petted,
@@ -139,7 +130,9 @@ a power cycle, and the heater does not depend on a single write landing.
 
 The oven rejects readings outside 32-500 F. A burnt-out probe reads NaN and a
 failed SPI read returns 0.0, both of which would otherwise look like a cold
-oven and latch the heater on.
+oven and latch the heater on. A missing probe therefore stalls the line at MM
+rather than cooking blind; the `OVENtemp` command forces the oven to report
+ready if you need to run without one.
 
 ## Tests
 
