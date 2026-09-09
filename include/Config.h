@@ -88,9 +88,14 @@ const GcPusher::Config kGrahamCracker2 = {
     .clearMs = 2000,
 };
 
+// Not under test right now: the oven never touches its hardware and always
+// reports ready, so the rest of the line can run without it.
+const bool kOvenEnabled = false;
+
 // CALIBRATE the setpoint too. 85F is roughly ambient, so as shipped the heater
 // never fires and the oven reports ready immediately.
 const Oven::Config kOven = {
+    .enabled = kOvenEnabled,
     .heater = {5, 2},
     .hold = {4, 7},
     .thermistor = {2, 1},

@@ -26,10 +26,13 @@ static const char* inputState(channelLabel channel) {
 
 // One short line per report so a 5s cadence stays readable in the monitor.
 static void reportInputs() {
-    logLine("%5lus  estop:%s  start:%s  run:%s  oven:%dF", (unsigned long)(millis() / 1000),
+    char oven[12] = "disabled";
+    if (config::kOvenEnabled) {
+        snprintf(oven, sizeof(oven), "%dF", (int)P1.readTemperature(config::kOven.thermistor));
+    }
+    logLine("%5lus  estop:%s  start:%s  run:%s  oven:%s", (unsigned long)(millis() / 1000),
             inputState(config::kEStopButton), inputState(config::kStartButton),
-            rig::runSwitchOn() ? "ON" : "off",
-            (int)P1.readTemperature(config::kOven.thermistor));
+            rig::runSwitchOn() ? "ON" : "off", oven);
 }
 
 void setup() {

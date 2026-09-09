@@ -21,6 +21,10 @@ Station::Timing Oven::timingFor(const Config& config) {
 }
 
 void Oven::poll(bool machineRunning) {
+    if (!m_config.enabled) {
+        return;  // Not under test: no hardware touched, always ready.
+    }
+
     if (!machineRunning) {
         m_p1.writeDiscrete(0, m_config.heater);
         return;
@@ -50,16 +54,29 @@ void Oven::poll(bool machineRunning) {
     }
 }
 
-void Oven::onActivate() { m_p1.writeDiscrete(1, m_config.hold); }
+void Oven::onActivate() {
+    if (m_config.enabled) {
+        m_p1.writeDiscrete(1, m_config.hold);
+    }
+}
 
-void Oven::onRelease() { m_p1.writeDiscrete(0, m_config.hold); }
+void Oven::onRelease() {
+    if (m_config.enabled) {
+        m_p1.writeDiscrete(0, m_config.hold);
+    }
+}
 
 void Oven::onEStop() {
-    m_p1.writeDiscrete(0, m_config.heater);
-    m_p1.writeDiscrete(0, m_config.hold);
+    if (m_config.enabled) {
+        m_p1.writeDiscrete(0, m_config.heater);
+        m_p1.writeDiscrete(0, m_config.hold);
+    }
 }
 
 std::string Oven::detail() const {
+    if (!m_config.enabled) {
+        return "disabled";
+    }
     return std::to_string(static_cast<int>(m_temperature)) + "F";
 }
 
@@ -72,6 +89,11 @@ void Oven::setAtTemp(bool value) {
 }
 
 void Oven::selfTest() {
+    if (!m_config.enabled) {
+        logLine("%s: disabled, skipping", name().c_str());
+        return;
+    }
+
     logLine("%s: tray hold solenoid", name().c_str());
     m_p1.writeDiscrete(1, m_config.hold);
     delay(kPulseMs);
