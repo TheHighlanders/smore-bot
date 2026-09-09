@@ -1,64 +1,43 @@
-#ifndef OVEN_h
-#define OVEN_h
+#ifndef OVEN_H
+#define OVEN_H
 
-#include "machine/Machine.h"
-#include "machine/Station.h"
+#include <P1AM.h>
+
 #include "SerialBoolean.h"
-#include "P1AM.h"
+#include "machine/Station.h"
 
-class Oven : public Station{
-    public:
-        struct OvenHWConfig{
-            channelLabel relaySolenoid;       // Output slot and channel with Oven heater relay connected
-            channelLabel trayEntrySense;      // Input slot and channel with tray entry sensor connected
-            channelLabel trayExitSense;       // Input slot and channel with tray exit sensor connected
-            channelLabel trayholdSolenoid;    // Output slot and channel with tray hold solenoid connected
-            channelLabel thermistor;          // Input slot and channle with thermistor connected
-            float tempSetpoint;               // Setpoint for temperature of the oven
-            float tempDeadzone;
-            float cookTime;
-        };
+// Holds a tray for the cook time. Only accepts work once it is at temperature.
+class Oven : public Station {
+   public:
+    struct Config {
+        channelLabel heater;      // Heater relay
+        channelLabel hold;        // Tray hold solenoid
+        channelLabel thermistor;  // Slot 0 to run without a temperature probe
+        float setpointF;
+        float deadbandF;
+    };
 
-        // TODO: Config / setpoint / deadzone update live
-        Oven(std::string name, P1AM& p1, OvenHWConfig hwConfig, Machine* machine) : 
-            Station(name), 
-            hardware(p1), 
-            config(hwConfig), 
-            atTemp(false), 
-            trayInside(false), 
-            tempSerial(name+"temp", PERSISTENT), 
-            exitSerial(name+"exit", EPHEMERAL),
-            cookTime(config.cookTime) {
-            m_machine = machine;
-        } // Constructs a Oven station. Names must be unique.
+    Oven(std::string name, P1AM& p1, Config config, Timing timing);
 
-        virtual void update() override; // Update the station (poll sensors, manage internal state, etc)
+   protected:
+    void poll(bool machineRunning) override;
+    void onActivate() override;
+    void onRelease() override;
+    void onEStop() override;
 
-        virtual bool activate(Machine* machine) override; // Activates a station to do work. Return indicates if it was accepted or not, fires Machine callback when done.
-        virtual void deactivate() override; // Returns the station to an inactive state.
-        virtual bool free() const override; // Is the station available to do work. (IE, has it been deactivated, and confirmed it is clear (if applicable))
+    bool ready() const override { return m_atTemp; }
+    std::string detail() const override;
 
-        virtual void eStop() override; // Safes all hardware connected to the station.
+   private:
+    void setAtTemp(bool value);
 
-        static bool ovenTimerCallback(void* argument); // Callback fired after Oven timer elapses. Timer measures cook time
+    P1AM& m_p1;
+    Config m_config;
 
-        void setCookTime(float cookTime); // Sets the Cook Time
+    float m_temperature = 0;
+    bool m_atTemp = false;
 
-        virtual std::string state() const override;
-
-    private:
-        P1AM hardware;
-        OvenHWConfig config;
-
-        bool atTemp;
-        bool trayInside;
-
-        SerialBoolean tempSerial;
-        SerialBoolean exitSerial;
-
-        float temperature = 0;
-
-        float cookTime = 0;
+    SerialBoolean m_forceAtTemp;  // "<name>temp" toggles the probe out of the loop
 };
 
 #endif

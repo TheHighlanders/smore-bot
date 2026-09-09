@@ -1,254 +1,139 @@
-/*
- * P1AM Blink Example
- *
- * Initializes the P1AM Base Controller, then toggles discrete output
- * channel 2 on slot 1 at 1-second intervals.
- *
- * Compatible with:
- *   - P1AM-100  (ATSAMD21G18A)
- *   - P1AM-200  (ATSAMD51P20A)
- *
- * Wiring: Connect a P1000-series digital output module in slot 1.
- *
- * Library: https://github.com/facts-engineering/P1AM
- */
+#include <Adafruit_NeoPixel.h>
+#include <P1AM.h>
 
-#include "main.h"
-
-#include "P1AM.h"
+#include "Config.h"
+#include "Log.h"
+#include "SerialBoolean.h"
 #include "machine/Machine.h"
+#include "stations/Belt.h"
+#include "stations/Dispenser.h"
+#include "stations/Oven.h"
+
+static Machine machine;
+static Adafruit_NeoPixel pixels(1, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+
+static SerialBoolean startCommand("start", EPHEMERAL);
+static SerialBoolean eStopCommand("estop", EPHEMERAL);
+static SerialBoolean statusCommand("status", EPHEMERAL);
+
+static bool configOk = false;
+static bool startWasPressed = false;
+
+static void setRGB(uint8_t r, uint8_t g, uint8_t b) {
+    static uint32_t shown = 0xFFFFFFFFu;
+    uint32_t color = pixels.Color(r, g, b);
+    if (color == shown) {
+        return;
+    }
+    shown = color;
+    pixels.setPixelColor(0, color);
+    pixels.show();
+}
+
+// Reads false for an unfitted module, so the same firmware runs on a base
+// without the discrete input card.
+static bool readInput(channelLabel label) {
+    return label.slot != 0 && P1.readDiscrete(label);
+}
+
+static bool verifyModules() {
+    uint8_t found = P1.printModules();
+    if (found != config::kModuleCount) {
+        logError("Expected %u modules, base reports %u", (unsigned)config::kModuleCount, found);
+        return false;
+    }
+    for (size_t i = 0; i < config::kModuleCount; i++) {
+        const config::ModuleSlot& expected = config::kModules[i];
+        moduleProps props = P1.readSlotProps(expected.slot);
+        if (strcmp(expected.name, props.moduleName) != 0) {
+            logError("Slot %u: expected %s, found %s", expected.slot, expected.name,
+                     props.moduleName);
+            return false;
+        }
+    }
+    return true;
+}
 
 void setup() {
     Serial.begin(115200);
+    pinMode(SWITCH_BUILTIN, INPUT);
+    pinMode(LED_BUILTIN, OUTPUT);
+    pixels.begin();
+    setRGB(150, 150, 0);
 
-    logUpdate("Smore Bot Online");
-    logUpdate("Waiting for Base Controller...");
-
-    // P1.init() returns true once all modules have finished initializing.
-    // It will block here until modules are ready.
+    logUpdate("Smore Bot starting, waiting for base controller");
     while (!P1.init()) {
         ;
     }
 
-    logUpdate("Base Controller ready.");
-
-    // Configurations
-    configureMachine();
-    configureModules();
-    configureStations();
-
-    setRGB(150, 150, 0);
-
-    int numModules = modules.size();
-    const char* moduleNames[numModules];
-    moduleNames[0] = "";
-    for (const auto& module : modules) {
-        if(module.second > numModules){
-            logError("Module Configured in a slot larger than the number of configured modules");
-            logError("\tLikely Caused by missing a module in configureModules()");
-            logError("\tResolve and Reboot");
-            logError("Number of modules configured: %d, Module listed in position: %d", numModules, module.second);
-            return;
-        }
-        moduleNames[module.second - 1] =  // Subtract one to account for 1 indexing of slot numbers
-            module.first.c_str();  // Convert to C Strings
-    }
-
-    logUpdate("Checking Module Configuration");
-
-    logUpdate("Configured Modules:");
-    for (auto name : moduleNames) {
-         logInfo(name);
-    }
-
-    int found = P1.printModules();
-    logInfo("Expected: %d, Actual: %d", numModules, found);
-    if(found != numModules){
-        logError("Discrepancy Detected");
-    }
-
-    logUpdate("Checking Correct Ordering");
-
-    bool moduleNameError = false;
-    for(const auto& module : modules){
-        moduleProps props = P1.readSlotProps(module.second);
-
-        if(strcmp(module.first.c_str(), props.moduleName) != 0){
-            logError("Error: Configuration incorrect. Slot %d\r\nExpected: %s, Found: %s", module.second, module.first, props.moduleName);
-            moduleNameError = true;
-        }
-    }
-
-    if(moduleNameError){
-        logError("Resolve Module Configuration Ordering Errors");
+    if (!verifyModules()) {
+        logError("Module layout does not match Config.h. Fix the base and reboot.");
         return;
     }
 
-    logUpdate("Modules List Confirmed Correct");
-
-    // Station Creation
-    Dispenser* gc1= new Dispenser("GC1", P1, gc1Config);
-    Dispenser* choc = new Dispenser("CHOC", P1, chocConfig);
-    Dispenser* mm = new Dispenser("MM", P1, mmConfig);
-    Oven* oven = new Oven("Oven", P1, ovenConfig, &smoreBot);
-    Dispenser* gc2 = new Dispenser("GC2", P1, gc2Config);
-
-    Belt* belt = new Belt("BELT", P1, beltConfig);
-
-    logUpdate("Stations Instantiated");
-
-    std::vector<Station*> stations{gc1, choc, mm, oven, gc2};
-    std::vector<Station*> contStations{belt};
-
-    // Machine Setup
-    smoreBot = Machine(stations, contStations);
-
-    for(auto station : stations){
-        logInfo("Station: %s", station->name().c_str());
-    }
-    for(auto station : contStations){
-        logInfo("Continuous Station: %s", station->name().c_str());
+    if (config::kOven.thermistor.slot != 0) {
+        P1.configureModule(config::kThermistorSetup, config::kOven.thermistor.slot);
     }
 
-    logUpdate("Configuration Complete, Machine Ready");
-    setRGB(0,150,0);
+    static Dispenser grahamCracker1("GC1", P1, config::kGrahamCracker1,
+                                    config::kFirstStationTiming);
+    static Dispenser chocolate("CHOC", P1, config::kChocolate, config::kDispenserTiming);
+    static Dispenser marshmallow("MM", P1, config::kMarshmallow, config::kDispenserTiming);
+    static Oven oven("OVEN", P1, config::kOven, config::kOvenTiming);
+    static Dispenser grahamCracker2("GC2", P1, config::kGrahamCracker2, config::kDispenserTiming);
+    static Belt belt("BELT", P1, config::kBeltRelay);
+
+    machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
+                      {&belt});
+
+    P1.configWD(config::kWatchdogMs, HOLD);
+    P1.startWD();
+
+    configOk = true;
+    logUpdate("Ready. Flip the run switch, then press start.");
 }
 
 void loop() {
-    smoreBot.tickTimers();
-    smoreBot.update();
-
-    // Connection Checking
-    int fault = P1.checkConnection();
-    if (!P1.isBaseActive() || fault) {
-        Serial.printf("Machine E-Stopping, Fault at %d\r\n", fault);
-        smoreBot.eStop();
-        setRGB(255,0,0);
+    if (Serial.available()) {
+        String line = Serial.readStringUntil('\n');
+        SerialBoolean::parseInput(line.c_str(), line.length());
     }
 
-    // Poll Buttons
-    // Run switch
-    if (digitalRead(SWITCH_BUILTIN) && !smoreBot.isEmergencyStopped()) {
-        smoreBot.resume();
-    } else {
-        smoreBot.stop();
+    if (!configOk) {
+        setRGB(150, 0, 0);
+        return;
     }
 
-    // EStop
-    if ((P1.readDiscrete(eStop) || eStopSerial.read()) && !smoreBot.isEmergencyStopped()) {
-        Serial.println("E-STOPPED");
-        smoreBot.eStop();
-        setRGB(255,0,0);
-        // Machine will need to be power cycled to release E-Stop
+    P1.petWD();
 
+    bool baseFault = !P1.isBaseActive() || P1.checkConnection() != 0;
+    bool eStopPressed = readInput(config::kEStopButton) || eStopCommand.read();
+
+    if (!machine.isEStopped() && (baseFault || eStopPressed)) {
+        logError("E-STOP: %s", baseFault ? "base controller fault" : "operator");
+        machine.eStop();  // Latched: releasing it needs a power cycle
     }
 
-    // Start Button
-    if (P1.readDiscrete(startButton) || startSerial.read()) {
-        logUpdate("Starting Cycle");
-        if(!smoreBot.startCycle()){
-            logError("Machine Refused Cycle Start");
-            logError("Error: %s", (smoreBot.isRunning() ? "First Station Refused" : "Machine is not running"));
-        }
+    machine.run(digitalRead(SWITCH_BUILTIN) == HIGH);
+
+    bool startPressed = readInput(config::kStartButton) || startCommand.read();
+    if (startPressed && !startWasPressed && !machine.startCycle()) {
+        logError("Cycle refused: %s", machine.isRunning() ? "first station busy" : "machine held");
+    }
+    startWasPressed = startPressed;
+
+    machine.update();
+
+    if (statusCommand.read()) {
+        machine.printStatus();
     }
 
-    if (smoreBot.isRunning()){
+    if (machine.isEStopped()) {
+        setRGB(150, 0, 0);
+    } else if (machine.isRunning()) {
         setRGB(150, 150, 0);
-        digitalWrite(LED_BUILTIN, HIGH);
     } else {
-        if(!smoreBot.isEmergencyStopped()){
-            setRGB(0,255,0);
-        }
-        digitalWrite(LED_BUILTIN, LOW);
+        setRGB(0, 150, 0);
     }
-
-    if(Serial.available()){
-        String str = Serial.readStringUntil('\n');
-        Serial.printf("Received: %s\r\n", str.c_str());
-        // Update our Serial Booleans
-        SerialBoolean::parseInput(str.c_str(), str.length());
-    }
-
-    if(statusSerial.read()){
-        smoreBot.printStatus();
-    }
-}
-
-void setRGB(int r, int g, int b){
-    pixels.setPixelColor(0, pixels.Color(r, g, b)); // Set RGB LED to green (R, G, B)
-    pixels.show(); // Update RGB LED        
-}
-
-void configureMachine() {
-    // Add modules in format (Name, Slot) to the modules list.
-    // Slot numbers are NOT zero indexed (ie slot 1 is the first connected module)
-    modules.emplace("P1-16ND3", 1);  // Digital Input
-    modules.emplace("P1-04NTC", 2);  // Thermistor
-    modules.emplace("P1-04AD-2", 3); // Analog Input
-    modules.emplace("P1-15TD2", 4);  // Digital Output
-    modules.emplace("P1-08TRS", 5);  // Relay
-}
-
-void configureModules() {
-    // Configure Thermistor
-    // https://facts-engineering.github.io/modules/P1-04NTC/P1-04NTC.html
-    // High Side Burnout degF, 10k-CP (Type 3), All channels enabled
-    const char P1_04NTC_CONFIG[] = {0x40, 0x03, 0x60, 0x07,
-                                    0x20, 0x02, 0x80, 0x00};
-    P1.configureModule(P1_04NTC_CONFIG, modules.at("P1-04NTC"));
-
-    pinMode(SWITCH_BUILTIN, INPUT);  // Configure inbuilt switch
-    pinMode(LED_BUILTIN, OUTPUT); // Configure inbuilt LED (Non-RGB)
-    pixels.begin();
-
-    eStop = {modules.at("P1-16ND3"), 9};
-    startButton = {modules.at("P1-16ND3"),10};
-}
-
-void configureStations() {
-    gc1Config = {
-        {modules.at("P1-15TD2"), 1},  // capture
-        0,                            // dispense GPIO 0
-        {modules.at("P1-16ND3"), 1},  // traySense
-        0,                            // active
-        0,                            // inactive
-    };
-
-    chocConfig = {
-        {modules.at("P1-15TD2"), 2},  // capture
-        1,                            // dispense GPIO 1
-        {modules.at("P1-16ND3"), 2},  // traySense
-        0,                            // active
-        0,                            // inactive
-    };
-
-    mmConfig = {
-        {modules.at("P1-15TD2"), 3},  // capture
-        2,                            // dispense GPIO 2
-        {modules.at("P1-16ND3"), 3},  // traySense
-        0,                            // active
-        0,                            // inactive
-    };
-    ovenConfig = {
-        {modules.at("P1-08TRS"), 2},  // relay
-        {modules.at("P1-16ND3"), 4},  // entry
-        {modules.at("P1-16ND3"), 5},  // exit
-        {modules.at("P1-15TD2"), 4},  // capture
-        {modules.at("P1-04NTC"), 1},  // thermocouple
-        85,                          // setpoint;
-        1,                            // deadzone
-        5,                            // cook time
-    };
-
-    gc2Config = {
-        {modules.at("P1-15TD2"), 5},  // capture
-        3,                            // dispense GPIO 3
-        {modules.at("P1-16ND3"), 6},  // traySense
-        0,                            // active
-        0,                            // inactive
-    };
-
-    beltConfig = {
-        {modules.at("P1-08TRS"), 1}   // relay
-    };
+    digitalWrite(LED_BUILTIN, machine.isRunning() ? HIGH : LOW);
 }
