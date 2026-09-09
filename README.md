@@ -69,10 +69,25 @@ Flash `p1am_200_bringup` to check wiring before running any machine logic:
 pio run -e p1am_200_bringup -t upload
 ```
 
-It verifies the module layout, then pulses each actuator in turn for 750 ms,
-one at a time, printing what it is driving. Afterwards it reports the state of
-every input and the oven temperature, then stops. Press enter in the serial
-monitor to run the sweep again without reflashing.
+It verifies the module layout, then powers up **read only**: nothing moves.
+Every 5 seconds it prints one line of input state:
+
+```
+   35s  estop:off  start:ON  run:off  oven:72F
+```
+
+`n/a` means the channel is marked `kAbsent`. The LED is blue while read only.
+
+To move hardware, arm the actuators first:
+
+| Command | Effect |
+| --- | --- |
+| `actuators` | Toggle the actuator arm. Off at power-up; the LED turns magenta when armed |
+| `test` | Pulse every actuator once, in sequence. Refused while read only |
+
+`test` drives each station in turn, one actuator at a time. `GcPusher` steps
+through its real pick-and-place order rather than firing solenoids
+individually, so the moves happen in an order the rig can survive.
 
 A bring-up build never starts the machine and never starts the watchdog. Each
 station tests its own hardware using the same config the real code uses, so

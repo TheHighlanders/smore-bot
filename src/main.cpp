@@ -45,26 +45,44 @@ static void pollSerial() {
 }
 
 #ifdef BRINGUP
-static void reportInput(const char* label, channelLabel channel) {
+
+// Actuators are armed by an explicit toggle, so a bring-up build powers up
+// read only and nothing moves until someone asks for it.
+static SerialBoolean actuatorsCommand("actuators", PERSISTENT);
+static SerialBoolean testCommand("test", EPHEMERAL);
+
+static const uint32_t kReportMs = 5000;
+static bool actuatorsArmed = false;
+static uint32_t lastReport = 0;
+
+static const char* inputState(channelLabel channel) {
     if (!fitted(channel)) {
-        logInfo("\t%s: not fitted", label);
-    } else {
-        logInfo("\t%s: %s", label, readChannel(P1, channel) ? "closed" : "open");
+        return "n/a";
     }
+    return readChannel(P1, channel) ? "ON" : "off";
 }
 
-// Pulses one actuator at a time and prints every input, so wiring can be
-// checked before any machine logic runs.
-static void runBringUp() {
-    logUpdate("Bring-up: pulsing actuators");
+// One short line per report so a 5s cadence stays readable in the monitor.
+static void reportSensors() {
+    char oven[12] = "n/a";
+    if (fitted(config::kOven.thermistor)) {
+        snprintf(oven, sizeof(oven), "%dF", (int)P1.readTemperature(config::kOven.thermistor));
+    }
+    logInfo("%5lus  estop:%s  start:%s  run:%s  oven:%s", (unsigned long)(millis() / 1000),
+            inputState(config::kEStopButton), inputState(config::kStartButton),
+            digitalRead(SWITCH_BUILTIN) ? "ON" : "off", oven);
+}
+
+static void runActuatorTest() {
+    if (!actuatorsArmed) {
+        logError("Read only. Type 'actuators' to arm, then 'test'.");
+        return;
+    }
+    logUpdate("Pulsing actuators");
     machine.selfTest();
-
-    logUpdate("Bring-up: inputs");
-    reportInput("e-stop button", config::kEStopButton);
-    reportInput("start button", config::kStartButton);
-
-    logUpdate("Bring-up complete. Press enter to repeat.");
+    logUpdate("Actuator test complete");
 }
+
 #endif
 
 static bool verifyModules() {
@@ -120,7 +138,7 @@ void setup() {
 #ifdef BRINGUP
     // Return before the watchdog starts: a bring-up build never runs the
     // machine, so nothing would pet it.
-    runBringUp();
+    logUpdate("Bring-up, read only. 'actuators' arms them, 'test' pulses them.");
     return;
 #endif
 
@@ -133,11 +151,25 @@ void setup() {
 
 void loop() {
 #ifdef BRINGUP
-    setRGB(0, 0, 150);
-    if (Serial.available()) {
-        Serial.readStringUntil('\n');
-        runBringUp();
+    pollSerial();
+
+    bool armedNow = actuatorsCommand.read();
+    if (armedNow != actuatorsArmed) {
+        actuatorsArmed = armedNow;
+        logUpdate("Actuators %s", actuatorsArmed ? "ARMED" : "disabled, read only");
     }
+
+    if (testCommand.read()) {
+        runActuatorTest();
+    }
+
+    if (millis() - lastReport >= kReportMs) {
+        lastReport = millis();
+        reportSensors();
+    }
+
+    // Magenta while actuators are armed, blue while read only.
+    setRGB(actuatorsArmed ? 150 : 0, 0, 150);
     return;
 #endif
 
