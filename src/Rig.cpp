@@ -23,7 +23,7 @@ bool verifyModules() {
     bool ok = true;
     uint8_t found = P1.printModules();
     if (found != config::kModuleCount) {
-        logError("Expected %u modules, base reports %u", (unsigned)config::kModuleCount, found);
+        logLine("Expected %u modules, base reports %u", (unsigned)config::kModuleCount, found);
         ok = false;
     }
     // Report every mismatch, so a miswired base takes one reboot to diagnose.
@@ -31,7 +31,7 @@ bool verifyModules() {
         const config::ModuleSlot& expected = config::kModules[i];
         moduleProps props = P1.readSlotProps(expected.slot);
         if (strcmp(expected.name, props.moduleName) != 0) {
-            logError("Slot %u: expected %s, found %s", expected.slot, expected.name,
+            logLine("Slot %u: expected %s, found %s", expected.slot, expected.name,
                      props.moduleName);
             ok = false;
         }
@@ -49,11 +49,11 @@ bool begin() {
     pinMode(SWITCH_BUILTIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
 
-    logUpdate("Smore Bot starting, waiting for base controller");
+    logLine("Smore Bot starting, waiting for base controller");
     while (!P1.init()) {}
 
     if (!verifyModules()) {
-        logError("Module layout does not match Config.h. Fix the base and reboot.");
+        logLine("Module layout does not match Config.h. Fix the base and reboot.");
         return false;
     }
 
@@ -77,7 +77,7 @@ void pollSerial() {
     }
     String line = Serial.readStringUntil('\n');
     if (!SerialBoolean::parseInput(line.c_str(), line.length())) {
-        logError("Unknown command: %s", line.c_str());
+        logLine("Unknown command: %s", line.c_str());
     }
 }
 

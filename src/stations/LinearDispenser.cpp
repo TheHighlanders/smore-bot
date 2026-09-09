@@ -35,16 +35,16 @@ void LinearDispenser::setExtended(bool extended) {
     }
     m_extended = extended;
     m_p1.writeDiscrete(extended ? 1 : 0, m_config.extend);
-    logInfo("%s: actuator %s", name().c_str(), extended ? "extending" : "retracting");
+    logLine("%s: actuator %s", name().c_str(), extended ? "extending" : "retracting");
 }
 
 void LinearDispenser::selfTest() {
-    logUpdate("%s: tray stop", name().c_str());
+    logLine("%s: tray stop", name().c_str());
     m_p1.writeDiscrete(1, m_config.capture);
     delay(kPulseMs);
     m_p1.writeDiscrete(0, m_config.capture);
 
-    logUpdate("%s: actuator full stroke", name().c_str());
+    logLine("%s: actuator full stroke", name().c_str());
     setExtended(true);
     delay(m_config.extendMs + m_config.dwellMs);
     setExtended(false);

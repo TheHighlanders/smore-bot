@@ -72,7 +72,7 @@ void GcPusher::applyMove(size_t index) {
     m_p1.writeDiscrete(kMoves[index].gripper, m_config.gripper);
     m_p1.writeDiscrete(kMoves[index].lift, m_config.lift);
     m_p1.writeDiscrete(kMoves[index].translate, m_config.translate);
-    logInfo("%s: %s", name().c_str(), kMoves[index].name);
+    logLine("%s: %s", name().c_str(), kMoves[index].name);
 }
 
 void GcPusher::parkArm() {
@@ -83,14 +83,14 @@ void GcPusher::parkArm() {
 }
 
 void GcPusher::selfTest() {
-    logUpdate("%s: tray stop", name().c_str());
+    logLine("%s: tray stop", name().c_str());
     m_p1.writeDiscrete(1, m_config.capture);
     delay(kPulseMs);
     m_p1.writeDiscrete(0, m_config.capture);
 
     // Step the arm through the real sequence rather than pulsing solenoids
     // individually, so the moves are checked in an order the rig can survive.
-    logUpdate("%s: pick and place sequence", name().c_str());
+    logLine("%s: pick and place sequence", name().c_str());
     for (size_t i = 0; i < kMoveCount; i++) {
         applyMove(i);
         delay(m_config.moveMs[i]);

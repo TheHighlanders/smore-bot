@@ -23,14 +23,14 @@ void Station::update(uint32_t clock, bool machineRunning) {
             if (m_timing.workMs != kContinuous && elapsed(clock) >= m_timing.workMs) {
                 onComplete();
                 enter(Phase::Done, clock);
-                logInfo("%s: work complete", m_name.c_str());
+                logLine("%s: work complete", m_name.c_str());
             }
             break;
 
         case Phase::Done:
             if (!m_stallReported && elapsed(clock) >= kStallWarnMs) {
                 m_stallReported = true;
-                logError("%s: blocked %lus waiting on the next station",
+                logLine("%s: blocked %lus waiting on the next station",
                          m_name.c_str(), (unsigned long)(elapsed(clock) / 1000));
             }
             break;
@@ -52,7 +52,7 @@ bool Station::activate(uint32_t clock) {
     }
     enter(Phase::Arriving, clock);
     onActivate();
-    logInfo("%s: activated", m_name.c_str());
+    logLine("%s: activated", m_name.c_str());
     return true;
 }
 
@@ -64,13 +64,13 @@ void Station::deactivate(uint32_t clock) {
     // Skipping Clearing when there is nothing to clear keeps a station with no
     // clear time immediately reusable.
     enter(m_timing.clearMs ? Phase::Clearing : Phase::Idle, clock);
-    logInfo("%s: released", m_name.c_str());
+    logLine("%s: released", m_name.c_str());
 }
 
 void Station::eStop(uint32_t clock) {
     onEStop();
     enter(Phase::Idle, clock);
-    logError("%s: E-STOPPED", m_name.c_str());
+    logLine("%s: E-STOPPED", m_name.c_str());
 }
 
 std::string Station::state() const {
