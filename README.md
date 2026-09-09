@@ -11,6 +11,7 @@ from belt travel time instead of being confirmed by hardware.
 **Flash:** `pio run -e p1am_200 -t upload`  
 **Start 115200 Baud Serial Monitor:** `pio device monitor`  
 **Bring-up build:** `pio run -e p1am_200_bringup -t upload`  
+**Unit tests (host, no hardware):** `pio test -e native`  
 
 ## Setup
 
@@ -121,6 +122,19 @@ a power cycle, and the heater does not depend on a single write landing.
 The oven rejects readings outside 32-500 F. A burnt-out probe reads NaN and a
 failed SPI read returns 0.0, both of which would otherwise look like a cold
 oven and latch the heater on.
+
+## Tests
+
+`pio test -e native` runs the machine and station logic on the host. No board
+needed: `test/stubs/Arduino.h` supplies `millis()` and the two `Serial` calls
+the logger makes, and `FakeStation` stands in for real hardware, failing the
+test if the machine ever puts two trays in one station.
+
+The tests cover the properties that are hard to check by eye on a machine with
+no sensors: several trays in the line at once without collisions, the start
+button being ignored rather than queued, the belt clock freezing while the
+machine is held, clear time gating the next tray, e-stop latching, and the
+`millis()` rollover at ~49.7 days.
 
 ## Useful Reference
 
