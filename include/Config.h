@@ -21,8 +21,8 @@ struct ModuleSlot {
 // Expected base layout, verified against the base controller at boot. Every
 // module listed here must be present or the machine refuses to start.
 const ModuleSlot kModules[] = {
-    {"P1-16ND3", 1},   // Discrete in: start button, MM exit sensor
-    {"P1-04NTC", 2},   // Thermistor: oven temperature
+    {"P1-04NTC", 1},   // Thermistor: oven temperature
+    {"P1-16ND3", 2},   // Discrete in: start button, MM exit sensor
     {"P1-04AD-2", 3},  // Analog in: spare
     {"P1-15TD2", 4},   // Discrete out: pneumatic gates, conveyor, linear actuators
     {"P1-08TRS", 5},   // Relay: oven heater, MM motor
@@ -32,7 +32,7 @@ const size_t kModuleCount = sizeof(kModules) / sizeof(kModules[0]);
 // Thermistor module: high-side burnout, degF, 10k-CP (type 3), all channels on.
 const char kThermistorSetup[] = {0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00};
 
-const channelLabel kStartButton = {1, 10};
+const channelLabel kStartButton = {2, 10};
 // The e-stop is hardware now: it cuts power directly, so there is no channel
 // for software to read or act on.
 
@@ -85,7 +85,7 @@ const LinearDispenser::Config kChocolate = {
 const MotorDispenser::Config kMarshmallow = {
     .capture = {4, 3},
     .motor = {5, 8},
-    .exitSensor = {1, 9},
+    .exitSensor = {2, 9},
     .timeoutMs = 5000,  // CALIBRATE: safety bound if the sensor never triggers
     .transitMs = 3000,
     .clearMs = 2000,
@@ -115,7 +115,7 @@ const Oven::Config kOven = {
     .enabled = kOvenEnabled,
     .heater = {5, 1},
     .hold = {4, 8},  // TBD, unconfirmed: oven is disabled above, so unused
-    .thermistor = {2, 1},
+    .thermistor = {1, 1},
     .setpointF = 85.0f,
     .deadbandF = 1.0f,
     .cookMs = 45000,
