@@ -16,10 +16,11 @@ class LinearDispenser : public Station {
         uint32_t extendMs;     // Travel out
         uint32_t dwellMs;      // Hold at full extension
         uint32_t retractMs;    // Travel back
+        uint32_t transitMs;    // Upstream release -> tray arrives here
+        uint32_t clearMs;      // Release -> tray fully past this station
     };
 
-    LinearDispenser(std::string name, P1AM& p1, Config config, uint32_t transitMs,
-                    uint32_t clearMs);
+    LinearDispenser(std::string name, P1AM& p1, Config config);
 
     void selfTest() override;
 
@@ -32,7 +33,7 @@ class LinearDispenser : public Station {
     void onEStop() override;
 
    private:
-    static Timing timingFor(const Config& config, uint32_t transitMs, uint32_t clearMs);
+    static Timing timingFor(const Config& config);
     void setExtended(bool extended);
 
     P1AM& m_p1;

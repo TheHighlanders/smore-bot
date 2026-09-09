@@ -37,14 +37,17 @@ The line is `GC1 -> CHOC -> MM -> OVEN -> GC2`:
 
 | Station | Type | Hardware |
 | --- | --- | --- |
-| GC1, GC2 | `GcPusher` | Three pneumatic solenoids: grab, lift, translate, lower, release, return |
-| CHOC, MM | `LinearDispenser` | One linear actuator: extend, dwell, retract |
+| GC1 | `LinearDispenser` | One linear actuator: extend, dwell, retract |
+| CHOC | `LinearDispenser` | One linear actuator: extend, dwell, retract |
+| MM | `MotorDispenser` | One motor on a discrete output: run, settle (hardware TBD) |
 | OVEN | `Oven` | Heater relay, tray hold solenoid, optional thermistor |
+| GC2 | `GcPusher` | Three pneumatic solenoids: grab, lift, translate, lower, release, return |
 | BELT | `Belt` | One relay, runs continuously |
 
-`GcPusher` and `LinearDispenser` derive their work duration from their own
-actuator sequence, so a station's timing cannot drift out of step with the
-moves it actually performs.
+Each station carries its own `transitMs` and `clearMs` in its own `Config`, so
+timings are tuned one station at a time. Work duration is never configured
+directly: every station sums its own actuator sequence, so a station's phase
+duration cannot drift out of step with the moves it actually performs.
 
 Several trays can be in the line at once. A station only accepts a tray when it
 is `Idle`, and the machine advances downstream-first, so trays cannot collide.

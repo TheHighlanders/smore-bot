@@ -26,15 +26,15 @@ const Move kMoves[GcPusher::kMoveCount] = {
 
 }  // namespace
 
-GcPusher::GcPusher(std::string name, P1AM& p1, Config config, uint32_t transitMs, uint32_t clearMs)
-    : Station(name, timingFor(config, transitMs, clearMs)), m_p1(p1), m_config(config) {}
+GcPusher::GcPusher(std::string name, P1AM& p1, Config config)
+    : Station(name, timingFor(config)), m_p1(p1), m_config(config) {}
 
-Station::Timing GcPusher::timingFor(const Config& config, uint32_t transitMs, uint32_t clearMs) {
+Station::Timing GcPusher::timingFor(const Config& config) {
     uint32_t total = 0;
     for (size_t i = 0; i < kMoveCount; i++) {
         total += config.moveMs[i];
     }
-    return Timing{transitMs, total, clearMs};
+    return Timing{config.transitMs, total, config.clearMs};
 }
 
 void GcPusher::onActivate() { writeChannel(m_p1, 1, m_config.capture); }
