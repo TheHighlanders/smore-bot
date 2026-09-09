@@ -33,6 +33,9 @@ class Station {
     bool forceComplete(uint32_t clock);   // End work early; false if not working
     void eStop(uint32_t clock);
 
+    // Bring-up: pulse this station's actuators and report its inputs.
+    virtual void selfTest() = 0;
+
     bool free() const { return m_phase == Phase::Idle && ready(); }
     bool done() const { return m_phase == Phase::Done; }
 
@@ -40,6 +43,8 @@ class Station {
     std::string state() const;
 
    protected:
+    static const uint32_t kPulseMs = 750;  // Actuator hold during selfTest
+
     virtual void onActivate() {}  // Tray released upstream: extend the stop
     virtual void onArrive() {}    // Tray is here: start working
     virtual void onComplete() {}  // Work finished: park actuators

@@ -17,6 +17,8 @@ class Dispenser : public Station {
 
     Dispenser(std::string name, P1AM& p1, Config config, Timing timing);
 
+    void selfTest() override;
+
    protected:
     void onActivate() override;
     void onArrive() override;

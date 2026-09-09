@@ -42,6 +42,29 @@ static void pollSerial() {
     }
 }
 
+#ifdef BRINGUP
+static void reportInput(const char* label, channelLabel channel) {
+    if (!fitted(channel)) {
+        logInfo("\t%s: not fitted", label);
+    } else {
+        logInfo("\t%s: %s", label, readChannel(P1, channel) ? "closed" : "open");
+    }
+}
+
+// Pulses one actuator at a time and prints every input, so wiring can be
+// checked before any machine logic runs.
+static void runBringUp() {
+    logUpdate("Bring-up: pulsing actuators");
+    machine.selfTest();
+
+    logUpdate("Bring-up: inputs");
+    reportInput("e-stop button", config::kEStopButton);
+    reportInput("start button", config::kStartButton);
+
+    logUpdate("Bring-up complete. Press enter to repeat.");
+}
+#endif
+
 static bool verifyModules() {
     bool ok = true;
     uint8_t found = P1.printModules();
@@ -92,6 +115,13 @@ void setup() {
     machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
                       {&belt});
 
+#ifdef BRINGUP
+    // Return before the watchdog starts: a bring-up build never runs the
+    // machine, so nothing would pet it.
+    runBringUp();
+    return;
+#endif
+
     P1.configWD(config::kWatchdogMs, HOLD);
     P1.startWD();
 
@@ -100,6 +130,15 @@ void setup() {
 }
 
 void loop() {
+#ifdef BRINGUP
+    setRGB(0, 0, 150);
+    if (Serial.available()) {
+        Serial.readStringUntil('\n');
+        runBringUp();
+    }
+    return;
+#endif
+
     pollSerial();
 
     if (!configOk) {

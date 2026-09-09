@@ -105,3 +105,12 @@ void Machine::printStatus() const {
         logInfo("\t%s: %s", station->name().c_str(), station->state().c_str());
     }
 }
+
+void Machine::selfTest() const {
+    for (Station* station : m_continuous) {
+        station->selfTest();
+    }
+    for (Station* station : m_line) {
+        station->selfTest();
+    }
+}

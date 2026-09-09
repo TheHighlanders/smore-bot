@@ -19,6 +19,8 @@ class Oven : public Station {
 
     Oven(std::string name, P1AM& p1, Config config, Timing timing);
 
+    void selfTest() override;
+
    protected:
     void poll(bool machineRunning) override;
     void onActivate() override;

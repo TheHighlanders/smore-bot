@@ -1,5 +1,6 @@
 #include "stations/Oven.h"
 
+#include <Arduino.h>
 #include <math.h>
 
 #include "Channel.h"
@@ -73,4 +74,22 @@ void Oven::setAtTemp(bool value) {
     }
     m_atTemp = value;
     logUpdate("%s: %s", name().c_str(), value ? "at temperature" : "heating");
+}
+
+void Oven::selfTest() {
+    logUpdate("%s: tray hold solenoid", name().c_str());
+    writeChannel(m_p1, 1, m_config.hold);
+    delay(kPulseMs);
+    writeChannel(m_p1, 0, m_config.hold);
+
+    logUpdate("%s: heater relay", name().c_str());
+    writeChannel(m_p1, 1, m_config.heater);
+    delay(kPulseMs);
+    writeChannel(m_p1, 0, m_config.heater);
+
+    if (!fitted(m_config.thermistor)) {
+        logInfo("\tthermistor: not fitted");
+    } else {
+        logInfo("\tthermistor: %d F", (int)m_p1.readTemperature(m_config.thermistor));
+    }
 }

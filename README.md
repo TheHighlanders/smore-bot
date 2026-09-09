@@ -10,6 +10,7 @@ from belt travel time instead of being confirmed by hardware.
 **Build:** `pio run -e p1am_200`  
 **Flash:** `pio run -e p1am_200 -t upload`  
 **Start 115200 Baud Serial Monitor:** `pio device monitor`  
+**Bring-up build:** `pio run -e p1am_200_bringup -t upload`  
 
 ## Setup
 
@@ -38,6 +39,24 @@ together, so a tray in transit stays where the machine thinks it is.
 
 `clearMs` is the only interlock protecting a station from the tray behind it.
 With no sensors there is nothing else, so it must be generous.
+
+## Bring-up mode
+
+Flash `p1am_200_bringup` to check wiring before running any machine logic:
+
+```
+pio run -e p1am_200_bringup -t upload
+```
+
+It verifies the module layout, then pulses each actuator in turn for 750 ms,
+one at a time, printing what it is driving. Afterwards it reports the state of
+every input and the oven temperature, then stops. Press enter in the serial
+monitor to run the sweep again without reflashing.
+
+A bring-up build never starts the machine and never starts the watchdog. Each
+station tests its own hardware using the same config the real code uses, so
+there is no second wiring table to drift out of sync. Reflash `p1am_200` to run
+the machine.
 
 ## Calibrating
 

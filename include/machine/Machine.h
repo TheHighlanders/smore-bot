@@ -26,6 +26,7 @@ class Machine {
     bool isEStopped() const { return m_eStopped; }
 
     void printStatus() const;
+    void selfTest() const;  // Bring-up: exercise every station's hardware
 
    private:
     std::vector<Station*> m_line;
