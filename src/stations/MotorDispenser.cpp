@@ -32,16 +32,16 @@ void MotorDispenser::setRunning(bool running) {
     }
     m_running = running;
     m_p1.writeDiscrete(running ? 1 : 0, m_config.motor);
-    logInfo("%s: motor %s", name().c_str(), running ? "running" : "stopped");
+    logLine("%s: motor %s", name().c_str(), running ? "running" : "stopped");
 }
 
 void MotorDispenser::selfTest() {
-    logUpdate("%s: tray stop", name().c_str());
+    logLine("%s: tray stop", name().c_str());
     m_p1.writeDiscrete(1, m_config.capture);
     delay(kPulseMs);
     m_p1.writeDiscrete(0, m_config.capture);
 
-    logUpdate("%s: motor for %lums", name().c_str(), (unsigned long)m_config.runMs);
+    logLine("%s: motor for %lums", name().c_str(), (unsigned long)m_config.runMs);
     setRunning(true);
     delay(m_config.runMs);
     setRunning(false);

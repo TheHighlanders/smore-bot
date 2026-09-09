@@ -15,7 +15,7 @@ class Belt : public Station {
         : Station(name, Timing{0, kContinuous, 0}), m_p1(p1), m_relay(relay) {}
 
     void selfTest() override {
-        logUpdate("%s: belt relay", name().c_str());
+        logLine("%s: belt relay", name().c_str());
         m_p1.writeDiscrete(1, m_relay);
         delay(kPulseMs);
         m_p1.writeDiscrete(0, m_relay);

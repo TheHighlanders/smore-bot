@@ -21,7 +21,7 @@ void setup() {
     P1.configWD(config::kWatchdogMs, HOLD);
     P1.startWD();
 
-    logUpdate("Ready. Flip the run switch, then press start.");
+    logLine("Ready. Flip the run switch, then press start.");
 }
 
 void loop() {
@@ -44,7 +44,7 @@ void loop() {
 
     bool baseFault = !P1.isBaseActive() || P1.checkConnection() != 0;
     if (baseFault || rig::eStopPressed()) {
-        logError("E-STOP: %s", baseFault ? "base controller fault" : "operator");
+        logLine("E-STOP: %s", baseFault ? "base controller fault" : "operator");
         machine.eStop();
         digitalWrite(LED_BUILTIN, LOW);
         return;
@@ -55,7 +55,7 @@ void loop() {
     // A press while the entry station is occupied is ignored, not queued: the
     // operator can lean on the button and trays still come out one per cycle.
     if (rig::startEdge() && !machine.startCycle()) {
-        logInfo("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine held");
+        logLine("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine held");
     }
 
     machine.update();

@@ -26,7 +26,7 @@ static const char* inputState(channelLabel channel) {
 
 // One short line per report so a 5s cadence stays readable in the monitor.
 static void reportInputs() {
-    logInfo("%5lus  estop:%s  start:%s  run:%s  oven:%dF", (unsigned long)(millis() / 1000),
+    logLine("%5lus  estop:%s  start:%s  run:%s  oven:%dF", (unsigned long)(millis() / 1000),
             inputState(config::kEStopButton), inputState(config::kStartButton),
             rig::runSwitchOn() ? "ON" : "off",
             (int)P1.readTemperature(config::kOven.thermistor));
@@ -35,7 +35,7 @@ static void reportInputs() {
 void setup() {
     ready = rig::begin();
     if (ready) {
-        logUpdate("Bring-up, read only. 'actuators' arms them, start button pulses them.");
+        logLine("Bring-up, read only. 'actuators' arms them, start button pulses them.");
     }
 }
 
@@ -49,16 +49,16 @@ void loop() {
     bool armedNow = actuatorsCommand.read();
     if (armedNow != actuatorsArmed) {
         actuatorsArmed = armedNow;
-        logUpdate("Actuators %s", actuatorsArmed ? "ARMED" : "disabled, read only");
+        logLine("Actuators %s", actuatorsArmed ? "ARMED" : "disabled, read only");
     }
 
     if (rig::startEdge()) {
         if (actuatorsArmed) {
-            logUpdate("Pulsing actuators");
+            logLine("Pulsing actuators");
             rig::machine().selfTest();
-            logUpdate("Actuator test complete");
+            logLine("Actuator test complete");
         } else {
-            logError("Read only. Type 'actuators' to arm, then press start.");
+            logLine("Read only. Type 'actuators' to arm, then press start.");
         }
     }
 

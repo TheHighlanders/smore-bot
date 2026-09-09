@@ -41,7 +41,7 @@ void Machine::update() {
 
         if (i + 1 == m_line.size()) {
             station->deactivate(m_clock);
-            logUpdate("Cycle complete");
+            logLine("Cycle complete");
         } else if (m_line[i + 1]->free()) {
             station->deactivate(m_clock);
             m_line[i + 1]->activate(m_clock);
@@ -72,7 +72,7 @@ void Machine::run(bool enable) {
             station->deactivate(m_clock);
         }
     }
-    logUpdate(enable ? "Machine running" : "Machine held");
+    logLine("Machine %s", enable ? "running" : "held");
 }
 
 void Machine::eStop() {
@@ -87,13 +87,13 @@ void Machine::eStop() {
 }
 
 void Machine::printStatus() const {
-    logUpdate("Machine: %s%s, belt clock %lus", m_running ? "running" : "held",
+    logLine("Machine: %s%s, belt clock %lus", m_running ? "running" : "held",
               m_eStopped ? ", E-STOPPED" : "", (unsigned long)(m_clock / 1000));
     for (Station* station : m_line) {
-        logInfo("\t%s: %s", station->name().c_str(), station->state().c_str());
+        logLine("\t%s: %s", station->name().c_str(), station->state().c_str());
     }
     for (Station* station : m_continuous) {
-        logInfo("\t%s: %s", station->name().c_str(), station->state().c_str());
+        logLine("\t%s: %s", station->name().c_str(), station->state().c_str());
     }
 }
 

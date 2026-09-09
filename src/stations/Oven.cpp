@@ -32,7 +32,7 @@ void Oven::poll(bool machineRunning) {
         m_temperature > kMaxPlausibleF) {
         m_p1.writeDiscrete(0, m_config.heater);
         setAtTemp(false);
-        logError("%s: implausible probe reading, heater off", name().c_str());
+        logLine("%s: implausible probe reading, heater off", name().c_str());
     } else if (m_temperature < m_config.setpointF - m_config.deadbandF) {
         m_p1.writeDiscrete(1, m_config.heater);
         setAtTemp(false);
@@ -68,19 +68,19 @@ void Oven::setAtTemp(bool value) {
         return;
     }
     m_atTemp = value;
-    logUpdate("%s: %s", name().c_str(), value ? "at temperature" : "heating");
+    logLine("%s: %s", name().c_str(), value ? "at temperature" : "heating");
 }
 
 void Oven::selfTest() {
-    logUpdate("%s: tray hold solenoid", name().c_str());
+    logLine("%s: tray hold solenoid", name().c_str());
     m_p1.writeDiscrete(1, m_config.hold);
     delay(kPulseMs);
     m_p1.writeDiscrete(0, m_config.hold);
 
-    logUpdate("%s: heater relay", name().c_str());
+    logLine("%s: heater relay", name().c_str());
     m_p1.writeDiscrete(1, m_config.heater);
     delay(kPulseMs);
     m_p1.writeDiscrete(0, m_config.heater);
 
-    logInfo("\tthermistor: %d F", (int)m_p1.readTemperature(m_config.thermistor));
+    logLine("\tthermistor: %d F", (int)m_p1.readTemperature(m_config.thermistor));
 }
