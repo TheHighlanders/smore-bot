@@ -18,14 +18,16 @@ void Station::update(uint32_t clock, bool machineRunning) {
             }
             break;
 
-        case Phase::Working:
-            onWork(elapsed(clock));
-            if (m_timing.workMs != kContinuous && elapsed(clock) >= m_timing.workMs) {
+        case Phase::Working: {
+            bool workDone = onWork(elapsed(clock));
+            if (m_timing.workMs != kContinuous &&
+                (workDone || elapsed(clock) >= m_timing.workMs)) {
                 onComplete();
                 enter(Phase::Done, clock);
                 logLine("%s: work complete", m_name.c_str());
             }
             break;
+        }
 
         case Phase::Done:
             if (!m_stallReported && elapsed(clock) >= kStallWarnMs) {

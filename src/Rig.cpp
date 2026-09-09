@@ -45,7 +45,7 @@ Machine& machine() { return g_machine; }
 
 bool begin() {
     Serial.begin(115200);
-    Serial.setTimeout(20);  // A partial line must not stall the e-stop scan
+    Serial.setTimeout(20);  // A partial line must not stall the fault scan
     pinMode(SWITCH_BUILTIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
 
@@ -67,26 +67,33 @@ bool begin() {
     static MotorDispenser marshmallow("MM", P1, config::kMarshmallow);
     static Oven oven("OVEN", P1, config::kOven);
     static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2);
-    static Belt belt("BELT", P1, config::kBeltRelay);
+    static Belt belt("BELT", P1, config::kConveyorMotor);
 
     g_machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
                         {&belt});
     return true;
 }
 
-void pollSerial() {
+bool readLine(String& line) {
     if (!Serial.available()) {
+        return false;
+    }
+    line = Serial.readStringUntil('\n');
+    line.trim();
+    return true;
+}
+
+void pollSerial() {
+    String line;
+    if (!readLine(line)) {
         return;
     }
-    String line = Serial.readStringUntil('\n');
     if (!SerialBoolean::parseInput(line.c_str(), line.length())) {
         logLine("Unknown command: %s", line.c_str());
     }
 }
 
 bool runSwitchOn() { return digitalRead(SWITCH_BUILTIN) == HIGH; }
-
-bool eStopPressed() { return P1.readDiscrete(config::kEStopButton); }
 
 bool startEdge() {
     bool pressed = P1.readDiscrete(config::kStartButton);

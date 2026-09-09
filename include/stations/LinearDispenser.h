@@ -5,9 +5,12 @@
 
 #include "machine/Station.h"
 
-// DRAFT. Dispenses by driving a linear actuator out and back on its own timer:
-// extend, dwell at full extension, retract. The work phase lasts exactly as
-// long as that stroke, so the two cannot be configured out of step.
+// Dispenses by driving a linear actuator out and back: a DIO energizes a relay
+// that is normally retracted; energized, the relay extends the actuator until
+// it hits its own internal limit switch, mechanically, with no feedback wired
+// back to us. extendMs must be long enough to reach that limit. The work
+// phase is extend, dwell at full extension, retract, so its duration always
+// matches the stroke it actually commands.
 class LinearDispenser : public Station {
    public:
     struct Config {
@@ -27,7 +30,7 @@ class LinearDispenser : public Station {
    protected:
     void onActivate() override;
     void onArrive() override;
-    void onWork(uint32_t elapsedMs) override;
+    bool onWork(uint32_t elapsedMs) override;
     void onComplete() override;
     void onRelease() override;
     void onEStop() override;

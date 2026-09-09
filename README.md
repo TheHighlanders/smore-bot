@@ -33,6 +33,9 @@ Done --deactivate--> Clearing --clearMs--> Idle
 
 Subclasses only supply hardware actions (`onActivate`, `onArrive`, `onWork`,
 `onComplete`, `onRelease`, `onEStop`). All timing lives in the base class.
+`onWork` returns a bool: true finishes the work immediately (MM's exit sensor
+does this), false lets `workMs` run out as a timer, which is the plain
+dead-reckoned case every other station uses.
 
 The line is `GC1 -> CHOC -> MM -> OVEN -> GC2`:
 
@@ -40,10 +43,10 @@ The line is `GC1 -> CHOC -> MM -> OVEN -> GC2`:
 | --- | --- | --- |
 | GC1 | `LinearDispenser` | One linear actuator: extend, dwell, retract |
 | CHOC | `LinearDispenser` | One linear actuator: extend, dwell, retract |
-| MM | `MotorDispenser` | One motor on a discrete output: run, settle (hardware TBD) |
+| MM | `MotorDispenser` | Motor relay + a light sensor: runs until the sensor confirms the marshmallow has exited |
 | OVEN | `Oven` | Heater relay, tray hold solenoid, optional thermistor. Disabled via `config::kOvenEnabled` |
-| GC2 | `GcPusher` | Three pneumatic solenoids: grab, lift, translate, lower, release, return |
-| BELT | `Belt` | One relay, runs continuously |
+| GC2 | `GcPusher` | Linear actuator + gripper + lift: push, lower, grab, raise, release |
+| BELT | `Belt` | One conveyor motor output, runs continuously |
 
 Each station carries its own `transitMs` and `clearMs` in its own `Config`, so
 timings are tuned one station at a time. Work duration is never configured
@@ -79,26 +82,26 @@ It verifies the module layout, then powers up **read only**: nothing moves.
 Every 5 seconds it prints one line of input state:
 
 ```
-   35s  estop:off  start:ON  run:off  oven:72F
+   35s  start:ON  mmExit:off  run:off  oven:72F
 ```
 
 `oven` reads `disabled` while `config::kOvenEnabled` is false; the temperature
-is not read at all in that case.
+is not read at all in that case. Buttons and every other input are only ever
+reported here, never acted on - typing a station name is the only thing that
+moves hardware.
 
 The onboard LED is off while read only.
-
-To move hardware, arm the actuators first:
 
 | Command | Effect |
 | --- | --- |
 | `actuators` | Toggle the actuator arm. Off at power-up; the LED lights when armed |
+| a station's name, e.g. `GC1` | Run that station's own `selfTest()`, armed only |
 
-With the actuators armed, **press the start button** to pulse every actuator
-once, in sequence. Pressing it while read only just prints a reminder.
-
-The sweep drives each station in turn, one actuator at a time. `GcPusher` steps
-through its real pick-and-place order rather than firing solenoids
-individually, so the moves happen in an order the rig can survive.
+Type a station's exact name (`GC1`, `CHOC`, `MM`, `OVEN`, `GC2`, `BELT`) to run
+just that one station's sequence - nothing else moves. Typing one while read
+only prints a reminder instead. `GcPusher` steps through its real
+push/lower/grab/raise/release order rather than firing solenoids individually,
+so the moves happen in an order the rig can survive.
 
 A bring-up build never starts the machine and never starts the watchdog. Each
 station tests its own hardware using the same config the real code uses, so
@@ -121,12 +124,17 @@ and the current belt clock.
 
 ## Operator inputs
 
-Start and e-stop are discrete inputs, wired to the `P1-16ND3` at the channels in
-`config::kEStopButton` and `config::kStartButton`. Start is edge triggered, so
-holding it repeats nothing. Run/hold is the faceplate switch.
+Start is a discrete input, wired to the `P1-16ND3` at `config::kStartButton`,
+edge triggered so holding it repeats nothing. Run/hold is the faceplate
+switch.
 
-There is no way to abort a cycle in progress: an e-stop safes the machine, and
-anything short of that lets the sequence finish.
+The e-stop is hardware: it cuts power directly, with no PLC channel and no
+software in the loop. The only e-stop-shaped thing software still does is
+`Machine::eStop()` on a base controller fault (lost communication), which
+safes every station and latches until a power cycle - see Safety below.
+
+There is no way to abort a cycle in progress otherwise: anything short of a
+fault or the physical e-stop lets the sequence finish.
 
 ## Serial commands
 
@@ -140,9 +148,10 @@ anything short of that lets the sequence finish.
 The base controller watchdog runs in `HOLD` mode: if it stops being petted,
 every module output de-energizes and the CPU halts until a power cycle.
 
-An e-stop deliberately stops all traffic to the base, so the watchdog expires
-and the base de-energizes everything itself. Clearing an e-stop therefore means
-a power cycle, and the heater does not depend on a single write landing.
+A base controller fault deliberately stops all further traffic to the base, so
+the watchdog expires and the base de-energizes everything itself. Clearing it
+therefore means a power cycle, and the heater does not depend on a single
+write landing.
 
 Set `config::kOvenEnabled` to `false` in `include/Config.h` to take the oven
 out of testing entirely. It is `false` as shipped. Disabled, the oven never

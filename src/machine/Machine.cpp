@@ -97,11 +97,18 @@ void Machine::printStatus() const {
     }
 }
 
-void Machine::selfTest() const {
-    for (Station* station : m_continuous) {
-        station->selfTest();
-    }
+bool Machine::selfTestNamed(const char* name) const {
     for (Station* station : m_line) {
-        station->selfTest();
+        if (station->name() == name) {
+            station->selfTest();
+            return true;
+        }
     }
+    for (Station* station : m_continuous) {
+        if (station->name() == name) {
+            station->selfTest();
+            return true;
+        }
+    }
+    return false;
 }

@@ -16,8 +16,9 @@ void LinearDispenser::onActivate() { m_p1.writeDiscrete(1, m_config.capture); }
 
 void LinearDispenser::onArrive() { setExtended(true); }
 
-void LinearDispenser::onWork(uint32_t elapsedMs) {
+bool LinearDispenser::onWork(uint32_t elapsedMs) {
     setExtended(elapsedMs < m_config.extendMs + m_config.dwellMs);
+    return false;
 }
 
 void LinearDispenser::onComplete() { setExtended(false); }

@@ -5,26 +5,35 @@
 
 #include "machine/Station.h"
 
-// DRAFT. Pick-and-place a graham cracker onto the tray with three pneumatic
-// solenoids, sequenced purely on time:
+// Places a graham cracker with a linear actuator plus a two-axis pick arm
+// (a gripper and a single up/down lift, no lateral travel):
 //
-//   grab -> lift -> translate -> lower -> release -> return home
+//   push (linear actuator ejects a cracker to the pickup point)
+//   lower (arm descends onto it)
+//   grab (grip closes)
+//   raise (lifts clear)
+//   release (grip opens)
 //
-// Return home is not one of the named moves but is required, or the arm stays
-// over the tray and the next cycle has nowhere to grab from.
+// push's own retract is not on this timeline: it is commanded off the moment
+// push finishes and travels back on its own time, in parallel with
+// lower/grab/raise/release.
+//
+// ASSUMPTION, pending a bring-up test: grab/lift polarity (energized = close
+// / lower, de-energized = open / raise, both spring-return) and the release
+// step, which completes the place but was not spelled out in the brief.
 class GcPusher : public Station {
    public:
-    static const size_t kMoveCount = 6;
-
     struct Config {
-        channelLabel capture;    // Tray stop
-        channelLabel gripper;    // Energize to grip
-        channelLabel lift;       // Energize to raise
-        channelLabel translate;  // Energize to swing over the tray
+        channelLabel capture;  // Tray stop
+        channelLabel push;     // Linear actuator: ejects a cracker to the pickup point
+        channelLabel grab;     // Gripper: energize to close
+        channelLabel lift;     // Energize to lower, de-energize to raise
 
-        // Hold time per move, in order: grab, lift, translate, lower, release,
-        // return. Their sum is the station's work duration.
-        uint32_t moveMs[kMoveCount];
+        uint32_t pushMs;     // Push extends this long, until its own limit switch
+        uint32_t lowerMs;    // Time to lower once pushed into place
+        uint32_t grabMs;     // Time to grip once lowered
+        uint32_t raiseMs;    // Time to raise clear once gripped
+        uint32_t releaseMs;  // Time held open after releasing, before considered placed
 
         uint32_t transitMs;  // Upstream release -> tray arrives here
         uint32_t clearMs;    // Release -> tray fully past this station
@@ -35,21 +44,24 @@ class GcPusher : public Station {
     void selfTest() override;
 
    protected:
-    void onActivate() override;
-    void onArrive() override;
-    void onWork(uint32_t elapsedMs) override;
+    bool onWork(uint32_t elapsedMs) override;
     void onComplete() override;
+    void onActivate() override;
     void onRelease() override;
     void onEStop() override;
 
    private:
     static Timing timingFor(const Config& config);
-    void applyMove(size_t index);
-    void parkArm();
+    void setPush(bool extend);
+    void setLift(bool lower);
+    void setGrab(bool close);
+    void park();
 
     P1AM& m_p1;
     Config m_config;
-    size_t m_move = kMoveCount;  // Out of range, so the first move always writes
+    bool m_pushOn = false;
+    bool m_liftDown = false;
+    bool m_gripClosed = false;
 };
 
 #endif

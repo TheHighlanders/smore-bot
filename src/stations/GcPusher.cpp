@@ -4,82 +4,69 @@
 
 #include "Log.h"
 
-namespace {
-
-struct Move {
-    const char* name;
-    bool gripper;
-    bool lift;
-    bool translate;
-};
-
-// Solenoid states through the cycle. Durations come from Config::moveMs.
-const Move kMoves[GcPusher::kMoveCount] = {
-    {"grab", true, false, false},       //
-    {"lift", true, true, false},        //
-    {"translate", true, true, true},    //
-    {"lower", true, false, true},       //
-    {"release", false, false, true},    //
-    {"return", false, false, false},    //
-};
-
-}  // namespace
-
 GcPusher::GcPusher(std::string name, P1AM& p1, Config config)
     : Station(name, timingFor(config)), m_p1(p1), m_config(config) {}
 
 Station::Timing GcPusher::timingFor(const Config& config) {
-    uint32_t total = 0;
-    for (size_t i = 0; i < kMoveCount; i++) {
-        total += config.moveMs[i];
-    }
-    return Timing{config.transitMs, total, config.clearMs};
+    uint32_t workMs =
+        config.pushMs + config.lowerMs + config.grabMs + config.raiseMs + config.releaseMs;
+    return Timing{config.transitMs, workMs, config.clearMs};
 }
 
 void GcPusher::onActivate() { m_p1.writeDiscrete(1, m_config.capture); }
 
-void GcPusher::onArrive() {
-    m_move = kMoveCount;  // Replay the sequence from the start
-    applyMove(0);
+bool GcPusher::onWork(uint32_t elapsedMs) {
+    uint32_t lowered = m_config.pushMs;
+    uint32_t grabbed = lowered + m_config.lowerMs;
+    uint32_t raised = grabbed + m_config.grabMs;
+    uint32_t released = raised + m_config.raiseMs;
+
+    setPush(elapsedMs < lowered);
+    setLift(elapsedMs >= lowered && elapsedMs < raised);
+    setGrab(elapsedMs >= grabbed && elapsedMs < released);
+    return false;
 }
 
-void GcPusher::onWork(uint32_t elapsedMs) {
-    uint32_t boundary = 0;
-    for (size_t i = 0; i < kMoveCount; i++) {
-        boundary += m_config.moveMs[i];
-        if (elapsedMs < boundary) {
-            applyMove(i);
-            return;
-        }
-    }
-    applyMove(kMoveCount - 1);
-}
-
-void GcPusher::onComplete() { parkArm(); }
+void GcPusher::onComplete() { park(); }
 
 void GcPusher::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
 
 void GcPusher::onEStop() {
     m_p1.writeDiscrete(0, m_config.capture);
-    parkArm();
+    park();
 }
 
-void GcPusher::applyMove(size_t index) {
-    if (index == m_move) {
+void GcPusher::setPush(bool extend) {
+    if (extend == m_pushOn) {
         return;
     }
-    m_move = index;
-    m_p1.writeDiscrete(kMoves[index].gripper, m_config.gripper);
-    m_p1.writeDiscrete(kMoves[index].lift, m_config.lift);
-    m_p1.writeDiscrete(kMoves[index].translate, m_config.translate);
-    logLine("%s: %s", name().c_str(), kMoves[index].name);
+    m_pushOn = extend;
+    m_p1.writeDiscrete(extend ? 1 : 0, m_config.push);
+    logLine("%s: push %s", name().c_str(), extend ? "extending" : "retracting");
 }
 
-void GcPusher::parkArm() {
-    m_move = kMoveCount;
-    m_p1.writeDiscrete(0, m_config.gripper);
-    m_p1.writeDiscrete(0, m_config.lift);
-    m_p1.writeDiscrete(0, m_config.translate);
+void GcPusher::setLift(bool lower) {
+    if (lower == m_liftDown) {
+        return;
+    }
+    m_liftDown = lower;
+    m_p1.writeDiscrete(lower ? 1 : 0, m_config.lift);
+    logLine("%s: arm %s", name().c_str(), lower ? "lowering" : "raising");
+}
+
+void GcPusher::setGrab(bool close) {
+    if (close == m_gripClosed) {
+        return;
+    }
+    m_gripClosed = close;
+    m_p1.writeDiscrete(close ? 1 : 0, m_config.grab);
+    logLine("%s: gripper %s", name().c_str(), close ? "closing" : "opening");
+}
+
+void GcPusher::park() {
+    setPush(false);
+    setLift(false);
+    setGrab(false);
 }
 
 void GcPusher::selfTest() {
@@ -88,12 +75,20 @@ void GcPusher::selfTest() {
     delay(kPulseMs);
     m_p1.writeDiscrete(0, m_config.capture);
 
-    // Step the arm through the real sequence rather than pulsing solenoids
-    // individually, so the moves are checked in an order the rig can survive.
-    logLine("%s: pick and place sequence", name().c_str());
-    for (size_t i = 0; i < kMoveCount; i++) {
-        applyMove(i);
-        delay(m_config.moveMs[i]);
-    }
-    parkArm();
+    logLine("%s: push", name().c_str());
+    setPush(true);
+    delay(m_config.pushMs);
+    setPush(false);
+
+    logLine("%s: lower and grab", name().c_str());
+    setLift(true);
+    delay(m_config.lowerMs);
+    setGrab(true);
+    delay(m_config.grabMs);
+
+    logLine("%s: raise and release", name().c_str());
+    setLift(false);
+    delay(m_config.raiseMs);
+    setGrab(false);
+    delay(m_config.releaseMs);
 }

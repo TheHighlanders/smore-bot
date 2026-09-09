@@ -42,9 +42,10 @@ void loop() {
 
     P1.petWD();
 
-    bool baseFault = !P1.isBaseActive() || P1.checkConnection() != 0;
-    if (baseFault || rig::eStopPressed()) {
-        logLine("E-STOP: %s", baseFault ? "base controller fault" : "operator");
+    // The e-stop button is hardware now and needs nothing from software. Loss
+    // of the base itself is the only fault left for software to react to.
+    if (!P1.isBaseActive() || P1.checkConnection() != 0) {
+        logLine("Base controller fault: stopping");
         machine.eStop();
         digitalWrite(LED_BUILTIN, LOW);
         return;
