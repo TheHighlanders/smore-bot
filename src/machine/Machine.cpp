@@ -31,21 +31,20 @@ void Machine::update() {
         return;
     }
 
-    // Downstream first, so a station that frees its slot this tick lets the one
-    // behind it move up in the same tick.
-    for (auto it = m_line.rbegin(); it != m_line.rend(); ++it) {
-        Station* station = *it;
+    // Downstream first, so a tray never advances into a station that is itself
+    // advancing this tick.
+    for (size_t i = m_line.size(); i-- > 0;) {
+        Station* station = m_line[i];
         if (!station->done()) {
             continue;
         }
 
-        Station* downstream = downstreamOf(station);
-        if (!downstream) {
+        if (i + 1 == m_line.size()) {
             station->deactivate(m_clock);
             logUpdate("Cycle complete");
-        } else if (downstream->free()) {
+        } else if (m_line[i + 1]->free()) {
             station->deactivate(m_clock);
-            downstream->activate(m_clock);
+            m_line[i + 1]->activate(m_clock);
         }
     }
 }
@@ -55,6 +54,15 @@ bool Machine::startCycle() {
         return false;
     }
     return m_line.front()->activate(m_clock);
+}
+
+bool Machine::skipStation() {
+    for (size_t i = m_line.size(); i-- > 0;) {
+        if (m_line[i]->forceComplete(m_clock)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void Machine::run(bool enable) {
@@ -80,10 +88,10 @@ void Machine::eStop() {
     m_eStopped = true;
     m_running = false;
     for (Station* station : m_line) {
-        station->eStop();
+        station->eStop(m_clock);
     }
     for (Station* station : m_continuous) {
-        station->eStop();
+        station->eStop(m_clock);
     }
 }
 
@@ -96,13 +104,4 @@ void Machine::printStatus() const {
     for (Station* station : m_continuous) {
         logInfo("\t%s: %s", station->name().c_str(), station->state().c_str());
     }
-}
-
-Station* Machine::downstreamOf(Station* station) const {
-    for (size_t i = 0; i + 1 < m_line.size(); i++) {
-        if (m_line[i] == station) {
-            return m_line[i + 1];
-        }
-    }
-    return nullptr;
 }

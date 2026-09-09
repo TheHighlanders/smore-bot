@@ -3,8 +3,9 @@
 #include "Log.h"
 
 // Open-loop machines have no jam feedback, so warn once if a finished station
-// waits this long for the one downstream.
-static const uint32_t kStallWarnMs = 30000;
+// waits this long for the one downstream. Must exceed the total occupancy of
+// the slowest station on the line, or a healthy full pipeline trips it.
+static const uint32_t kStallWarnMs = 120000;
 
 void Station::update(uint32_t clock, bool machineRunning) {
     poll(machineRunning);
@@ -18,10 +19,10 @@ void Station::update(uint32_t clock, bool machineRunning) {
             break;
 
         case Phase::Working:
-            if (elapsed(clock) >= m_timing.workMs) {
+            if (m_timing.workMs != kContinuous && elapsed(clock) >= m_timing.workMs) {
                 onComplete();
                 enter(Phase::Done, clock);
-                logUpdate("%s: work complete", m_name.c_str());
+                logInfo("%s: work complete", m_name.c_str());
             }
             break;
 
@@ -65,10 +66,19 @@ void Station::deactivate(uint32_t clock) {
     logInfo("%s: released", m_name.c_str());
 }
 
-void Station::eStop() {
+bool Station::forceComplete(uint32_t clock) {
+    if (m_phase != Phase::Arriving && m_phase != Phase::Working) {
+        return false;
+    }
+    onComplete();
+    enter(Phase::Done, clock);
+    logUpdate("%s: forced complete", m_name.c_str());
+    return true;
+}
+
+void Station::eStop(uint32_t clock) {
     onEStop();
-    m_phase = Phase::Idle;
-    m_stallReported = false;
+    enter(Phase::Idle, clock);
     logError("%s: E-STOPPED", m_name.c_str());
 }
 

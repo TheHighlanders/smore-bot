@@ -13,10 +13,8 @@ from belt travel time instead of being confirmed by hardware.
 
 ## Setup
 
-- Install preferred IDE and PlatformIO extension (VSCode or CLion should be easy)
-- Clone this repo
-- Open top level folder, and confirm PlatformIO starts
-- Run `pio run -e p1am_200` to build code
+Open the top level folder in any IDE with the PlatformIO extension (VSCode or
+CLion), then build with the command above.
 
 ## How it works
 
@@ -43,7 +41,8 @@ With no sensors there is nothing else, so it must be generous.
 
 ## Calibrating
 
-All hardware addresses and times are in `include/Config.h`.
+All hardware addresses and times are in `include/Config.h`; station order is in
+`src/main.cpp`, where the stations are built.
 
 1. Flip the run switch and confirm the belt starts.
 2. Time a tray from one station's release to the next station's stop. That is
@@ -61,22 +60,30 @@ and the current belt clock.
 | `start` | Start a cycle, same as the start button |
 | `estop` | Latch an emergency stop |
 | `status` | Print machine and station state |
+| `skip` | Force the furthest-along station to finish, for testing without waiting |
 | `OVENtemp` | Toggle the oven's thermistor out of the loop |
 
 ## Running without a module
 
-Set a `channelLabel` to `config::kAbsent` (slot 0) to mark hardware as not
-fitted. Inputs read false and outputs are skipped. Remove the module from
-`config::kModules` as well, or the boot check will refuse to start.
+Set a `channelLabel` to `kAbsent` (slot 0, from `include/Channel.h`) to mark
+hardware as not fitted. Inputs read false and outputs are dropped. Remove the
+module from `config::kModules` as well, or the boot check will refuse to start.
 
 Setting `kOven.thermistor` to `kAbsent` runs the oven open-loop; it will report
 ready immediately rather than waiting to reach setpoint.
 
 ## Safety
 
-The base controller watchdog is configured in `HOLD` mode. If the sketch stops
-petting it, every module output de-energizes and the CPU halts until a power
-cycle.
+The base controller watchdog runs in `HOLD` mode: if it stops being petted,
+every module output de-energizes and the CPU halts until a power cycle.
+
+An e-stop deliberately stops all traffic to the base, so the watchdog expires
+and the base de-energizes everything itself. Clearing an e-stop therefore means
+a power cycle, and the heater does not depend on a single write landing.
+
+The oven rejects readings outside 32-500 F. A burnt-out probe reads NaN and a
+failed SPI read returns 0.0, both of which would otherwise look like a cold
+oven and latch the heater on.
 
 ## Useful Reference
 

@@ -1,6 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <P1AM.h>
 
+#include "Channel.h"
 #include "Config.h"
 #include "Log.h"
 #include "SerialBoolean.h"
@@ -15,6 +16,7 @@ static Adafruit_NeoPixel pixels(1, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 static SerialBoolean startCommand("start", EPHEMERAL);
 static SerialBoolean eStopCommand("estop", EPHEMERAL);
 static SerialBoolean statusCommand("status", EPHEMERAL);
+static SerialBoolean skipCommand("skip", EPHEMERAL);
 
 static bool configOk = false;
 static bool startWasPressed = false;
@@ -30,53 +32,57 @@ static void setRGB(uint8_t r, uint8_t g, uint8_t b) {
     pixels.show();
 }
 
-// Reads false for an unfitted module, so the same firmware runs on a base
-// without the discrete input card.
-static bool readInput(channelLabel label) {
-    return label.slot != 0 && P1.readDiscrete(label);
+static void pollSerial() {
+    if (!Serial.available()) {
+        return;
+    }
+    String line = Serial.readStringUntil('\n');
+    if (!SerialBoolean::parseInput(line.c_str(), line.length())) {
+        logError("Unknown command: %s", line.c_str());
+    }
 }
 
 static bool verifyModules() {
+    bool ok = true;
     uint8_t found = P1.printModules();
     if (found != config::kModuleCount) {
         logError("Expected %u modules, base reports %u", (unsigned)config::kModuleCount, found);
-        return false;
+        ok = false;
     }
+    // Report every mismatch, so a miswired base takes one reboot to diagnose.
     for (size_t i = 0; i < config::kModuleCount; i++) {
         const config::ModuleSlot& expected = config::kModules[i];
         moduleProps props = P1.readSlotProps(expected.slot);
         if (strcmp(expected.name, props.moduleName) != 0) {
             logError("Slot %u: expected %s, found %s", expected.slot, expected.name,
                      props.moduleName);
-            return false;
+            ok = false;
         }
     }
-    return true;
+    return ok;
 }
 
 void setup() {
     Serial.begin(115200);
+    Serial.setTimeout(20);  // A partial line must not stall the e-stop scan
     pinMode(SWITCH_BUILTIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
     pixels.begin();
-    setRGB(150, 150, 0);
+    setRGB(0, 0, 150);
 
     logUpdate("Smore Bot starting, waiting for base controller");
-    while (!P1.init()) {
-        ;
-    }
+    while (!P1.init()) {}
 
     if (!verifyModules()) {
         logError("Module layout does not match Config.h. Fix the base and reboot.");
         return;
     }
 
-    if (config::kOven.thermistor.slot != 0) {
+    if (fitted(config::kOven.thermistor)) {
         P1.configureModule(config::kThermistorSetup, config::kOven.thermistor.slot);
     }
 
-    static Dispenser grahamCracker1("GC1", P1, config::kGrahamCracker1,
-                                    config::kFirstStationTiming);
+    static Dispenser grahamCracker1("GC1", P1, config::kGrahamCracker1, config::kEntryTiming);
     static Dispenser chocolate("CHOC", P1, config::kChocolate, config::kDispenserTiming);
     static Dispenser marshmallow("MM", P1, config::kMarshmallow, config::kDispenserTiming);
     static Oven oven("OVEN", P1, config::kOven, config::kOvenTiming);
@@ -94,12 +100,17 @@ void setup() {
 }
 
 void loop() {
-    if (Serial.available()) {
-        String line = Serial.readStringUntil('\n');
-        SerialBoolean::parseInput(line.c_str(), line.length());
-    }
+    pollSerial();
 
     if (!configOk) {
+        setRGB(150, 0, 0);
+        return;
+    }
+
+    // Once e-stopped, stop talking to the base entirely. The watchdog goes
+    // unpetted, so it de-energizes every output and holds the CPU until a
+    // power cycle. That is the only way out of an e-stop.
+    if (machine.isEStopped()) {
         setRGB(150, 0, 0);
         return;
     }
@@ -107,30 +118,38 @@ void loop() {
     P1.petWD();
 
     bool baseFault = !P1.isBaseActive() || P1.checkConnection() != 0;
-    bool eStopPressed = readInput(config::kEStopButton) || eStopCommand.read();
-
-    if (!machine.isEStopped() && (baseFault || eStopPressed)) {
+    bool eStopTyped = eStopCommand.read();  // One-shot: read before any ||
+    if (baseFault || readChannel(P1, config::kEStopButton) || eStopTyped) {
         logError("E-STOP: %s", baseFault ? "base controller fault" : "operator");
-        machine.eStop();  // Latched: releasing it needs a power cycle
+        machine.eStop();
+        setRGB(150, 0, 0);
+        return;
     }
 
     machine.run(digitalRead(SWITCH_BUILTIN) == HIGH);
 
-    bool startPressed = readInput(config::kStartButton) || startCommand.read();
-    if (startPressed && !startWasPressed && !machine.startCycle()) {
-        logError("Cycle refused: %s", machine.isRunning() ? "first station busy" : "machine held");
+    bool startTyped = startCommand.read();
+    bool startPressed = readChannel(P1, config::kStartButton) || startTyped;
+    if (startPressed && !startWasPressed) {
+        if (!machine.startCycle()) {
+            logError("Cycle refused: %s",
+                     machine.isRunning() ? "first station busy" : "machine held");
+        }
     }
     startWasPressed = startPressed;
 
     machine.update();
 
+    if (skipCommand.read() && !machine.skipStation()) {
+        logError("Nothing to skip");
+    }
+
     if (statusCommand.read()) {
         machine.printStatus();
     }
 
-    if (machine.isEStopped()) {
-        setRGB(150, 0, 0);
-    } else if (machine.isRunning()) {
+    // Yellow while the belt moves, green when it is safe to approach.
+    if (machine.isRunning()) {
         setRGB(150, 150, 0);
     } else {
         setRGB(0, 150, 0);

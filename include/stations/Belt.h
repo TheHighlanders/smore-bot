@@ -3,6 +3,7 @@
 
 #include <P1AM.h>
 
+#include "Channel.h"
 #include "machine/Station.h"
 
 // Runs whenever the machine runs. Never completes on its own.
@@ -12,9 +13,9 @@ class Belt : public Station {
         : Station(name, Timing{0, kContinuous, 0}), m_p1(p1), m_relay(relay) {}
 
    protected:
-    void onActivate() override { m_p1.writeDiscrete(1, m_relay); }
-    void onRelease() override { m_p1.writeDiscrete(0, m_relay); }
-    void onEStop() override { m_p1.writeDiscrete(0, m_relay); }
+    void onActivate() override { writeChannel(m_p1, 1, m_relay); }
+    void onRelease() override { writeChannel(m_p1, 0, m_relay); }
+    void onEStop() override { writeChannel(m_p1, 0, m_relay); }
 
    private:
     P1AM& m_p1;

@@ -15,7 +15,8 @@ class SerialBoolean{
         
         ~SerialBoolean();
 
-        static void parseInput(const char* input, size_t length);
+        // Returns false if the key is not registered.
+        static bool parseInput(const char* input, size_t length);
 
         bool read();
 
@@ -34,7 +35,9 @@ class SerialBoolean{
         // Sets the command to be distinct from its default
         void set();
 
-        static std::map<std::string, SerialBoolean*> registeredCommands;
+        // Construct-on-first-use: these objects are built in another
+        // translation unit, before a namespace-scope map would exist.
+        static std::map<std::string, SerialBoolean*>& registry();
 };
 
 #endif

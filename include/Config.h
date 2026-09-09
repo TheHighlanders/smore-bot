@@ -3,12 +3,13 @@
 
 #include <P1AM.h>
 
+#include "Channel.h"
 #include "machine/Station.h"
 #include "stations/Dispenser.h"
 #include "stations/Oven.h"
 
 // Every hardware address and dead-reckoning time lives here. Included once,
-// from main.cpp.
+// from main.cpp. Station order lives in main.cpp, where the stations are built.
 namespace config {
 
 struct ModuleSlot {
@@ -16,7 +17,8 @@ struct ModuleSlot {
     uint8_t slot;  // Slots are 1-indexed
 };
 
-// Expected base layout, verified against the base controller at boot.
+// Expected base layout, verified against the base controller at boot. Drop a
+// module here if it is not fitted, and set its channels to kAbsent below.
 const ModuleSlot kModules[] = {
     {"P1-16ND3", 1},   // Discrete in: start and e-stop buttons
     {"P1-04NTC", 2},   // Thermistor: oven temperature
@@ -29,9 +31,6 @@ const size_t kModuleCount = sizeof(kModules) / sizeof(kModules[0]);
 // Thermistor module: high-side burnout, degF, 10k-CP (type 3), all channels on.
 const char kThermistorSetup[] = {0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00};
 
-// Slot 0 marks a channel as not fitted. Inputs read false; outputs are skipped.
-const channelLabel kAbsent = {0, 0};
-
 const channelLabel kEStopButton = {1, 9};
 const channelLabel kStartButton = {1, 10};
 
@@ -42,8 +41,9 @@ const channelLabel kStartButton = {1, 10};
 //   clearMs    release -> tray fully past this station, which is the only
 //              interlock protecting the station behind it
 //
-// CALIBRATE these against the real belt before running product.
-const Station::Timing kFirstStationTiming = {0, 1500, 2000};
+// CALIBRATE these against the real belt before running product. The entry
+// station has no upstream station to travel from, hence transitMs 0.
+const Station::Timing kEntryTiming = {0, 1500, 2000};
 const Station::Timing kDispenserTiming = {3000, 1500, 2000};
 const Station::Timing kOvenTiming = {3000, 45000, 2500};
 
@@ -53,12 +53,14 @@ const Dispenser::Config kChocolate = {{4, 2}, 3, 0, 255};
 const Dispenser::Config kMarshmallow = {{4, 3}, 4, 0, 255};
 const Dispenser::Config kGrahamCracker2 = {{4, 5}, 5, 0, 255};
 
+// CALIBRATE the setpoint too. 85F is roughly ambient, so as shipped the heater
+// never fires and the oven reports ready immediately.
 const Oven::Config kOven = {
-    {5, 2},    // heater relay
-    {4, 4},    // tray hold solenoid
-    {2, 1},    // thermistor, or kAbsent to run open-loop
-    85.0f,     // setpoint, degF
-    1.0f,      // deadband, degF
+    {5, 2},  // heater relay
+    {4, 4},  // tray hold solenoid
+    {2, 1},  // thermistor, or kAbsent to run open-loop
+    85.0f,   // setpoint, degF
+    1.0f,    // deadband, degF
 };
 
 const channelLabel kBeltRelay = {5, 1};

@@ -17,6 +17,7 @@ class Machine {
 
     void update();
     bool startCycle();
+    bool skipStation();  // Force the furthest-along station to finish
 
     void run(bool enable);  // Enable/hold work assignment
     void eStop();
@@ -27,8 +28,6 @@ class Machine {
     void printStatus() const;
 
    private:
-    Station* downstreamOf(Station* station) const;
-
     std::vector<Station*> m_line;
     std::vector<Station*> m_continuous;
 

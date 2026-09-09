@@ -28,9 +28,10 @@ class Station {
 
     void update(uint32_t clock, bool machineRunning);
 
-    bool activate(uint32_t clock);   // Rejected unless free()
-    void deactivate(uint32_t clock); // Release the tray and start clearing
-    void eStop();
+    bool activate(uint32_t clock);        // Rejected unless free()
+    void deactivate(uint32_t clock);      // Release the tray and start clearing
+    bool forceComplete(uint32_t clock);   // End work early; false if not working
+    void eStop(uint32_t clock);
 
     bool free() const { return m_phase == Phase::Idle && ready(); }
     bool done() const { return m_phase == Phase::Done; }
@@ -45,7 +46,10 @@ class Station {
     virtual void onRelease() {}   // Let the tray go
     virtual void onEStop() = 0;   // De-energize everything
 
-    virtual void poll(bool machineRunning) { (void)machineRunning; }
+    // Runs every tick in every phase, including Idle. This is what keeps the
+    // oven heating while nothing is in it.
+    virtual void poll(bool /*machineRunning*/) {}
+
     virtual bool ready() const { return true; }        // Extra gate on free()
     virtual std::string detail() const { return ""; }  // Appended to state()
 
