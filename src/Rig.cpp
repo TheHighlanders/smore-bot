@@ -45,7 +45,6 @@ Machine& machine() { return g_machine; }
 
 bool begin() {
     Serial.begin(115200);
-    Serial.setTimeout(20);  // A partial line must not stall the fault scan
     pinMode(SWITCH_BUILTIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
 
@@ -74,13 +73,24 @@ bool begin() {
     return true;
 }
 
+// Non-blocking: only ever consumes bytes already sitting in the input buffer,
+// so a command that has not fully arrived yet cannot stall the caller - the
+// periodic sensor report in particular must keep firing on schedule.
 bool readLine(String& line) {
-    if (!Serial.available()) {
-        return false;
+    static String buffer;
+    while (Serial.available()) {
+        char c = (char)Serial.read();
+        if (c == '\n') {
+            line = buffer;
+            line.trim();
+            buffer = "";
+            return true;
+        }
+        if (buffer.length() < 64) {
+            buffer += c;
+        }
     }
-    line = Serial.readStringUntil('\n');
-    line.trim();
-    return true;
+    return false;
 }
 
 void pollSerial() {

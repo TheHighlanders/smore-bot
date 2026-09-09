@@ -79,7 +79,11 @@ pio run -e p1am_200_bringup -t upload
 ```
 
 It verifies the module layout, then powers up **read only**: nothing moves.
-Every 5 seconds it prints one line of input state:
+Every 5 seconds it prints one line of input state. Reading a typed command
+never blocks - it only consumes bytes already in the input buffer - so an
+in-progress or partial command cannot delay that report. A station's own
+sequence still runs one blocking step at a time once triggered, so the report
+pauses for the few seconds that takes, same as it would on real hardware.
 
 ```
    35s  start:ON  mmExit:off  run:off  oven:72F
