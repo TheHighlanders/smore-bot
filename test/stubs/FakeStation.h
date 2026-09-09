@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "machine/Station.h"
 
@@ -15,19 +16,38 @@ class FakeStation : public Station {
     int activations = 0;
     int completions = 0;
     int works = 0;
+    uint32_t lastWorkElapsed = 0;
     bool occupied = false;
     bool collided = false;
     bool safed = false;
 
+    // Stands in for a gate like the oven's "at temperature".
+    bool readyGate = true;
+
+    std::vector<std::string> events;
+
    protected:
+    bool ready() const override { return readyGate; }
+
     void onActivate() override {
         if (occupied) collided = true;
         occupied = true;
         activations++;
+        events.push_back("activate");
     }
-    void onWork(uint32_t) override { works++; }
-    void onComplete() override { completions++; }
-    void onRelease() override { occupied = false; }
+    void onArrive() override { events.push_back("arrive"); }
+    void onWork(uint32_t elapsedMs) override {
+        works++;
+        lastWorkElapsed = elapsedMs;
+    }
+    void onComplete() override {
+        completions++;
+        events.push_back("complete");
+    }
+    void onRelease() override {
+        occupied = false;
+        events.push_back("release");
+    }
     void onEStop() override {
         occupied = false;
         safed = true;

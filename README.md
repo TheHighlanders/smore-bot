@@ -155,10 +155,23 @@ the logger makes, and `FakeStation` stands in for real hardware, failing the
 test if the machine ever puts two trays in one station.
 
 The tests cover the properties that are hard to check by eye on a machine with
-no sensors: several trays in the line at once without collisions, the start
-button being ignored rather than queued, the belt clock freezing while the
-machine is held, clear time gating the next tray, e-stop latching, and the
-`millis()` rollover at ~49.7 days.
+no sensors:
+
+- One tray visits every station exactly once, in order
+- Five trays with the start button held never collide, and the line drains
+- A blocked station reports completion exactly once, however long it waits.
+  This is the regression guard for the deadlock the rewrite exists to prevent
+- A station that is not ready (a cold oven) blocks the line, and the line
+  resumes when it comes ready
+- Start is ignored rather than queued while the entry station is busy, and
+  activation is refused while busy, clearing, or not ready
+- Lifecycle hooks fire in order, and `onWork` runs through the work phase
+  without overrunning it
+- The belt clock freezes while the machine is held
+- Clear time gates the next tray into a station
+- E-stop safes every station and cannot be released
+- The belt restarts across repeated holds, and never completes on its own
+- The belt clock survives the `millis()` rollover at ~49.7 days
 
 ## Useful Reference
 

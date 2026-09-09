@@ -148,6 +148,76 @@ void continuous_station_never_completes() {
     TEST_ASSERT_TRUE(line.belt.occupied);
 }
 
+// The rewrite exists to prevent a station reporting completion more than once;
+// the old design pushed a blocked station onto a held list every tick and
+// deadlocked. Block the oven cold and hold MM at Done for a long time.
+void completion_is_reported_once_even_when_blocked() {
+    Line line;
+    line.oven.readyGate = false;  // Oven never comes up to temperature
+    line.machine.run(true);
+    line.run(120000, 1);
+
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, line.mm.completions,
+                                  "blocked station reported completion more than once");
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, line.oven.activations, "tray entered a station not ready");
+    TEST_ASSERT_TRUE_MESSAGE(line.mm.occupied, "blocked tray should still be held at MM");
+}
+
+void a_station_that_is_not_ready_blocks_the_line() {
+    Line line;
+    line.oven.readyGate = false;
+    line.machine.run(true);
+    line.run(120000, 1);
+    TEST_ASSERT_EQUAL_INT(0, line.oven.activations);
+
+    line.oven.readyGate = true;  // Comes up to temperature
+    line.run(200000);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, line.oven.activations, "line did not resume");
+    TEST_ASSERT_EQUAL_INT(1, line.gc2.completions);
+}
+
+void hooks_fire_in_order() {
+    Line line;
+    line.machine.run(true);
+    line.run(200000, 1);
+
+    const char* expected[] = {"activate", "arrive", "complete", "release"};
+    TEST_ASSERT_EQUAL_INT(4, (int)line.gc1.events.size());
+    for (int i = 0; i < 4; i++) {
+        TEST_ASSERT_EQUAL_STRING(expected[i], line.gc1.events[i].c_str());
+    }
+}
+
+void work_hook_runs_through_the_work_phase() {
+    Line line;
+    line.machine.run(true);
+    line.machine.startCycle();
+    line.run(200000);
+
+    // GC1 works for 1500 ms at 10 ms per tick, so onWork runs many times and
+    // never sees an elapsed time past the work duration.
+    TEST_ASSERT_TRUE_MESSAGE(line.gc1.works > 100, "onWork barely ran");
+    TEST_ASSERT_TRUE_MESSAGE(line.gc1.lastWorkElapsed >= 1500, "work phase ended early");
+    TEST_ASSERT_TRUE_MESSAGE(line.gc1.lastWorkElapsed < 1600, "onWork ran past completion");
+}
+
+void activate_is_rejected_unless_free() {
+    Line line;
+    line.machine.run(true);
+    TEST_ASSERT_TRUE(line.machine.startCycle());
+
+    // Busy, then clearing, then blocked by a gate: refused in every case.
+    TEST_ASSERT_FALSE(line.machine.startCycle());
+    line.run(1600);
+    TEST_ASSERT_FALSE(line.machine.startCycle());
+    line.run(2000);
+
+    line.gc1.readyGate = false;
+    TEST_ASSERT_FALSE_MESSAGE(line.machine.startCycle(), "activated a station that is not ready");
+    line.gc1.readyGate = true;
+    TEST_ASSERT_TRUE(line.machine.startCycle());
+}
+
 void belt_clock_survives_millis_rollover() {
     Line line;
     g_millis = 0xFFFFFF00u;  // ~256 ms before rollover
@@ -170,6 +240,11 @@ int main() {
     RUN_TEST(estop_safes_every_station_and_latches);
     RUN_TEST(belt_restarts_across_repeated_holds);
     RUN_TEST(continuous_station_never_completes);
+    RUN_TEST(completion_is_reported_once_even_when_blocked);
+    RUN_TEST(a_station_that_is_not_ready_blocks_the_line);
+    RUN_TEST(hooks_fire_in_order);
+    RUN_TEST(work_hook_runs_through_the_work_phase);
+    RUN_TEST(activate_is_rejected_unless_free);
     RUN_TEST(belt_clock_survives_millis_rollover);
     return UNITY_END();
 }
