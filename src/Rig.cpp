@@ -50,6 +50,7 @@ bool begin() {
     pinMode(LED_BUILTIN, OUTPUT);
 
     logLine("Smore Bot starting, waiting for base controller");
+    logLine("No response? Check the external 24V supply is on.");
     while (!P1.init()) {}
 
     if (!verifyModules()) {
