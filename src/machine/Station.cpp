@@ -69,12 +69,6 @@ void Station::deactivate(uint32_t clock) {
     logLine("%s: released", m_name.c_str());
 }
 
-void Station::eStop(uint32_t clock) {
-    onEStop();
-    enter(Phase::Idle, clock);
-    logLine("%s: E-STOPPED", m_name.c_str());
-}
-
 std::string Station::state() const {
     static const char* kPhaseNames[] = {"idle", "arriving", "working", "done", "clearing"};
     std::string text = kPhaseNames[static_cast<int>(m_phase)];

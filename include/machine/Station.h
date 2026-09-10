@@ -28,9 +28,8 @@ class Station {
 
     void update(uint32_t clock, bool machineRunning);
 
-    bool activate(uint32_t clock);        // Rejected unless free()
+    bool activate(uint32_t clock);    // Rejected unless free()
     void deactivate(uint32_t clock);  // Release the tray and start clearing
-    void eStop(uint32_t clock);
 
     // Bring-up: pulse this station's actuators and report its inputs.
     virtual void selfTest() = 0;
@@ -54,8 +53,7 @@ class Station {
     // station that only needs a timer can ignore elapsedMs and let workMs
     // expire instead.
     virtual bool onWork(uint32_t /*elapsedMs*/) { return false; }
-    virtual void onRelease() {}   // Let the tray go
-    virtual void onEStop() = 0;   // De-energize everything
+    virtual void onRelease() {}  // Let the tray go
 
     // Runs every tick in every phase, including Idle. This is what keeps the
     // oven heating while nothing is in it.

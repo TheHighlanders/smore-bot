@@ -24,7 +24,6 @@ class Belt : public Station {
    protected:
     void onActivate() override { m_p1.writeDiscrete(1, m_relay); }
     void onRelease() override { m_p1.writeDiscrete(0, m_relay); }
-    void onEStop() override { m_p1.writeDiscrete(0, m_relay); }
 
    private:
     P1AM& m_p1;

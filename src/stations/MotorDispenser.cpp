@@ -52,11 +52,6 @@ void MotorDispenser::onComplete() {
 
 void MotorDispenser::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
 
-void MotorDispenser::onEStop() {
-    m_p1.writeDiscrete(0, m_config.capture);
-    setRunning(false);
-}
-
 void MotorDispenser::setRunning(bool running) {
     if (running == m_running) {
         return;

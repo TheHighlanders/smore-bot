@@ -44,8 +44,8 @@ const size_t kModuleCount = sizeof(kModules) / sizeof(kModules[0]);
 const char kThermistorSetup[] = {0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00};
 
 const channelLabel kStartButton = {kSlotDiscreteIn, 10};
-// The e-stop is hardware now: it cuts power directly, so there is no channel
-// for software to read or act on.
+// The e-stop is entirely hardware: it cuts power directly, with no channel
+// and no software involvement at all.
 
 // Discrete out (kSlotDiscreteOut, P1-15TD2) channel map:
 //   1     GC2 claw
@@ -81,8 +81,7 @@ const channelLabel kStartButton = {kSlotDiscreteIn, 10};
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 6},  // Not wired yet; placeholder to stay clear of GC2
     .extend = {kSlotDiscreteOut, 15},
-    .extendMs = 3000,
-    .dwellMs = 600,
+    .extendMs = 3600,  // Was 3000 extend + 600 dwell; the relay can't idle mid-stroke
     .retractMs = 3000,
     .transitMs = 0,  // Entry station: nothing upstream to travel from
     .clearMs = 2000,
@@ -91,8 +90,7 @@ const LinearDispenser::Config kGrahamCracker1 = {
 const LinearDispenser::Config kChocolate = {
     .capture = {kSlotDiscreteOut, 7},  // Not wired yet; placeholder to stay clear of GC2
     .extend = {kSlotDiscreteOut, 14},
-    .extendMs = 3000,
-    .dwellMs = 600,
+    .extendMs = 3600,  // Was 3000 extend + 600 dwell; the relay can't idle mid-stroke
     .retractMs = 3000,
     .transitMs = 3000,
     .clearMs = 2000,
@@ -117,19 +115,16 @@ const GcPusher::Config kGrahamCracker2 = {
     .clearMs = 2000,
 };
 
-// Not under test right now: the oven never touches its hardware and always
-// reports ready, so the rest of the line can run without it.
+// False takes the oven out of testing: no hardware touched, and the heater
+// relay stays off. True runs it purely dead-reckoned - see Oven.h - with no
+// setpoint or deadband, since it no longer depends on the thermistor at all.
 const bool kOvenEnabled = true;
 
-// CALIBRATE the setpoint too. 85F is roughly ambient, so as shipped the heater
-// never fires and the oven reports ready immediately.
 const Oven::Config kOven = {
     .enabled = kOvenEnabled,
     .heater = {kSlotRelay, 1},
-    .hold = {kSlotDiscreteOut, 8},  // TBD, unconfirmed: disabled above, so unused
-    .thermistor = {kSlotThermistor, 1},
-    .setpointF = 85.0f,
-    .deadbandF = 1.0f,
+    .hold = {kSlotDiscreteOut, 8},  // TBD, unconfirmed
+    .thermistor = {kSlotThermistor, 1},  // Read-only; see Oven.h
     .cookMs = 45000,
     .transitMs = 3000,
     .clearMs = 2500,

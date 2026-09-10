@@ -31,19 +31,19 @@ Done --deactivate--> Clearing --clearMs--> Idle
 ```
 
 Subclasses only supply hardware actions (`onActivate`, `onArrive`, `onWork`,
-`onComplete`, `onRelease`, `onEStop`). All timing lives in the base class.
-`onWork` returns a bool: true finishes the work immediately (MM's exit sensor
-does this), false lets `workMs` run out as a timer, which is the plain
+`onComplete`, `onRelease`). All timing lives in the base class. `onWork`
+returns a bool: true finishes the work immediately (MM's exit sensor does
+this), false lets `workMs` run out as a timer, which is the plain
 dead-reckoned case every other station uses.
 
 The line is `GC1 -> CHOC -> MM -> OVEN -> GC2`:
 
 | Station | Type | Hardware |
 | --- | --- | --- |
-| GC1 | `LinearDispenser` | One linear actuator: extend, dwell, retract |
-| CHOC | `LinearDispenser` | One linear actuator: extend, dwell, retract |
+| GC1 | `LinearDispenser` | One linear actuator: extend, retract |
+| CHOC | `LinearDispenser` | One linear actuator: extend, retract |
 | MM | `MotorDispenser` | Motor relay + a light sensor: runs until the sensor reads blocked then clears (debounced 0.1s) |
-| OVEN | `Oven` | Heater relay, tray hold solenoid, optional thermistor. Disabled via `config::kOvenEnabled` |
+| OVEN | `Oven` | Heater relay + tray hold solenoid, purely timed. Disabled via `config::kOvenEnabled` |
 | GC2 | `GcPusher` | Lifter + claw + pusher: a fixed 7-move sequence, see below |
 | BELT | `Belt` | One conveyor motor output, runs continuously |
 
@@ -84,6 +84,18 @@ together, so a tray in transit stays where the machine thinks it is.
 
 `clearMs` is the only interlock protecting a station from the tray behind it.
 With no sensors there is nothing else, so it must be generous.
+
+The linear actuators (GC1, CHOC) drive a relay that is always actively
+extending or retracting - there is no third, idle state to hold at full
+extension. A dwell at full extension is therefore just more extend time, so
+`LinearDispenser::Config` has no separate `dwellMs`; fold any hold time
+straight into `extendMs`.
+
+The oven has no setpoint or control loop: its heater relay is simply on
+whenever the machine is running, and a tray's cook time is `cookMs`, dead
+reckoned like every other station's work duration. Its thermistor is read
+every tick purely for the status line - nothing ever gates on it, so a dead or
+unplugged probe cannot stall the line.
 
 ## Bring-up mode
 
@@ -147,42 +159,34 @@ Start is a discrete input, wired to the `P1-16ND3` at `config::kStartButton`,
 edge triggered so holding it repeats nothing. Run/hold is the faceplate
 switch.
 
-The e-stop is hardware: it cuts power directly, with no PLC channel and no
-software in the loop. The only e-stop-shaped thing software still does is
-`Machine::eStop()` on a base controller fault (lost communication), which
-safes every station and latches until a power cycle - see Safety below.
+The e-stop is entirely hardware: it cuts power directly, with no PLC channel
+and nothing for software to read, act on, or safe on its behalf.
 
-There is no way to abort a cycle in progress otherwise: anything short of a
-fault or the physical e-stop lets the sequence finish.
+There is no way to abort a cycle in progress otherwise: anything short of the
+physical e-stop lets the sequence finish.
 
 ## Serial commands
 
 | Command | Effect |
 | --- | --- |
 | `status` | Print machine and station state |
-| `OVENtemp` | Toggle the oven's thermistor out of the loop |
 
 ## Safety
 
 The base controller watchdog runs in `HOLD` mode: if it stops being petted,
 every module output de-energizes and the CPU halts until a power cycle.
 
-A base controller fault deliberately stops all further traffic to the base, so
-the watchdog expires and the base de-energizes everything itself. Clearing it
-therefore means a power cycle, and the heater does not depend on a single
-write landing.
+Losing the base controller (no comms, or a module missing) is the one fault
+software still watches for: it skips petting the watchdog and reports the
+fault every loop, rather than trying to safe anything itself. If the base
+recovers before the watchdog's window elapses, the machine simply resumes; if
+it does not, HOLD mode de-energizes everything and halts the CPU, same as it
+would for a genuinely hung sketch.
 
 Set `config::kOvenEnabled` to `false` in `include/Config.h` to take the oven
-out of testing entirely. It is `false` as shipped. Disabled, the oven never
-writes the heater or hold solenoid and never reads the thermistor, and always
-reports ready so the rest of the line runs without stalling behind it. The
-`OVENtemp` command has no effect while disabled.
-
-The oven rejects readings outside 32-500 F. A burnt-out probe reads NaN and a
-failed SPI read returns 0.0, both of which would otherwise look like a cold
-oven and latch the heater on. A missing probe therefore stalls the line at MM
-rather than cooking blind; the `OVENtemp` command forces the oven to report
-ready if you need to run without one.
+out of testing entirely; it is `true` as shipped. Disabled, the oven never
+writes the heater or hold solenoid and never reads the thermistor. Enabled or
+not, the oven never gates on temperature - see "How it works" above.
 
 ## Useful Reference
 

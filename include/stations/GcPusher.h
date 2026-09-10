@@ -31,7 +31,6 @@ class GcPusher : public Station {
     void onArrive() override;
     bool onWork(uint32_t elapsedMs) override;
     void onRelease() override;
-    void onEStop() override;
 
    private:
     static Timing timingFor(const Config& config);

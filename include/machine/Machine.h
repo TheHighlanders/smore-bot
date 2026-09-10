@@ -19,10 +19,8 @@ class Machine {
     bool startCycle();
 
     void run(bool enable);  // Enable/hold work assignment
-    void eStop();
 
     bool isRunning() const { return m_running; }
-    bool isEStopped() const { return m_eStopped; }
 
     void printStatus() const;
 
@@ -40,7 +38,6 @@ class Machine {
     uint32_t m_lastTick = 0;
 
     bool m_running = false;
-    bool m_eStopped = false;
 };
 
 #endif
