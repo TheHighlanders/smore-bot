@@ -11,6 +11,7 @@ from belt travel time instead of being confirmed by hardware.
 **Flash:** `pio run -e p1am_200 -t upload`  
 **Start 115200 Baud Serial Monitor:** `pio device monitor`  
 **Bring-up build:** `pio run -e p1am_200_bringup -t upload`  
+**Unit tests (host, no hardware):** `pio test -e native`  
 
 ## Setup
 
@@ -187,6 +188,32 @@ Set `config::kOvenEnabled` to `false` in `include/Config.h` to take the oven
 out of testing entirely; it is `true` as shipped. Disabled, the oven never
 writes the heater or hold solenoid and never reads the thermistor. Enabled or
 not, the oven never gates on temperature - see "How it works" above.
+
+## Tests
+
+`pio test -e native` runs the machine and station logic on the host. No board
+needed: `test/stubs/Arduino.h` supplies `millis()` and the two `Serial` calls
+the logger makes, and `FakeStation` stands in for real hardware, failing the
+test if the machine ever puts two trays in one station.
+
+The tests cover the properties that are hard to check by eye on a machine with
+no sensors:
+
+- One tray visits every station exactly once, in order
+- Five trays with the start button held never collide, and the line drains
+- A blocked station reports completion exactly once, however long it waits.
+  This is the regression guard for the deadlock the rewrite exists to prevent
+- A station that is not ready (a cold oven) blocks the line, and the line
+  resumes when it comes ready
+- Start is ignored rather than queued while the entry station is busy, and
+  activation is refused while busy, clearing, or not ready
+- Lifecycle hooks fire in order, and `onWork` runs through the work phase
+  without overrunning it
+- The belt clock freezes while the machine is held
+- Clear time gates the next tray into a station
+- E-stop safes every station and cannot be released
+- The belt restarts across repeated holds, and never completes on its own
+- The belt clock survives the `millis()` rollover at ~49.7 days
 
 ## Useful Reference
 
