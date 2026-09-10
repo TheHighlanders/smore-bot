@@ -49,13 +49,11 @@ const channelLabel kStartButton = {kSlotDiscreteIn, 10};
 
 // Discrete out (kSlotDiscreteOut, P1-15TD2) channel map:
 //   1-5   capture gates, in line order: GC1, CHOC, MM, OVEN, GC2
-//   6     GC2 grab (gripper)
-//   7     GC2 lift (raise/lower)
+//   6-7,15 unused for now - GC2 currently reuses 1, 2, 13 (see CHECK below)
 //   8-11  TBD
 //   12    conveyor motor
 //   13    CHOC linear actuator
 //   14    GC1 linear actuator
-//   15    GC2 push (linear actuator)
 // (13/14 were swapped after bring-up showed the wrong one moving per station)
 //
 // Relay (kSlotRelay, P1-08TRS) channel map:
@@ -77,20 +75,20 @@ const channelLabel kStartButton = {kSlotDiscreteIn, 10};
 
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 1},
-    .extend = {kSlotDiscreteOut, 14},
-    .extendMs = 1200,
+    .extend = {kSlotDiscreteOut, 15},
+    .extendMs = 3000,
     .dwellMs = 600,
-    .retractMs = 1200,
+    .retractMs = 3000,
     .transitMs = 0,  // Entry station: nothing upstream to travel from
     .clearMs = 2000,
 };
 
 const LinearDispenser::Config kChocolate = {
     .capture = {kSlotDiscreteOut, 2},
-    .extend = {kSlotDiscreteOut, 13},
-    .extendMs = 1200,
+    .extend = {kSlotDiscreteOut, 14},
+    .extendMs = 3000,
     .dwellMs = 600,
-    .retractMs = 1200,
+    .retractMs = 3000,
     .transitMs = 3000,
     .clearMs = 2000,
 };
@@ -104,23 +102,22 @@ const MotorDispenser::Config kMarshmallow = {
     .clearMs = 2000,
 };
 
+// CHECK: claw (1) and lifter (2) currently share channels with GC1's and
+// CHOC's own capture solenoids, and pusher (13) with CHOC's linear actuator.
+// The sequence itself (states + durations) lives in GcPusher.cpp, not here.
 const GcPusher::Config kGrahamCracker2 = {
     .capture = {kSlotDiscreteOut, 5},
-    .push = {kSlotDiscreteOut, 15},
-    .grab = {kSlotDiscreteOut, 6},
-    .lift = {kSlotDiscreteOut, 7},
-    .pushMs = 900,
-    .lowerMs = 600,
-    .grabMs = 500,
-    .raiseMs = 600,
-    .releaseMs = 400,
+    .lifter = {kSlotDiscreteOut, 2},
+    .claw = {kSlotDiscreteOut, 1},
+    .pusher = {kSlotDiscreteOut, 13},
     .transitMs = 3000,
     .clearMs = 2000,
 };
 
+
 // Not under test right now: the oven never touches its hardware and always
 // reports ready, so the rest of the line can run without it.
-const bool kOvenEnabled = false;
+const bool kOvenEnabled = true;
 
 // CALIBRATE the setpoint too. 85F is roughly ambient, so as shipped the heater
 // never fires and the oven reports ready immediately.
