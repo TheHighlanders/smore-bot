@@ -48,13 +48,18 @@ const channelLabel kStartButton = {kSlotDiscreteIn, 10};
 // for software to read or act on.
 
 // Discrete out (kSlotDiscreteOut, P1-15TD2) channel map:
-//   1-5   capture gates, in line order: GC1, CHOC, MM, OVEN, GC2
-//   6-7,15 unused for now - GC2 currently reuses 1, 2, 13 (see CHECK below)
+//   1     GC2 claw
+//   2     GC2 lifter
+//   3     MM capture
+//   4     unused
+//   5     GC2 capture
+//   6     GC1 capture (not wired yet)
+//   7     CHOC capture (not wired yet)
 //   8-11  TBD
 //   12    conveyor motor
-//   13    CHOC linear actuator
-//   14    GC1 linear actuator
-// (13/14 were swapped after bring-up showed the wrong one moving per station)
+//   13    GC2 pusher
+//   14    CHOC linear actuator
+//   15    GC1 linear actuator
 //
 // Relay (kSlotRelay, P1-08TRS) channel map:
 //   1  oven heater
@@ -74,7 +79,7 @@ const channelLabel kStartButton = {kSlotDiscreteIn, 10};
 // CALIBRATE all of these against the real belt before running product.
 
 const LinearDispenser::Config kGrahamCracker1 = {
-    .capture = {kSlotDiscreteOut, 1},
+    .capture = {kSlotDiscreteOut, 6},  // Not wired yet; placeholder to stay clear of GC2
     .extend = {kSlotDiscreteOut, 15},
     .extendMs = 3000,
     .dwellMs = 600,
@@ -84,7 +89,7 @@ const LinearDispenser::Config kGrahamCracker1 = {
 };
 
 const LinearDispenser::Config kChocolate = {
-    .capture = {kSlotDiscreteOut, 2},
+    .capture = {kSlotDiscreteOut, 7},  // Not wired yet; placeholder to stay clear of GC2
     .extend = {kSlotDiscreteOut, 14},
     .extendMs = 3000,
     .dwellMs = 600,
@@ -102,8 +107,6 @@ const MotorDispenser::Config kMarshmallow = {
     .clearMs = 2000,
 };
 
-// CHECK: claw (1) and lifter (2) currently share channels with GC1's and
-// CHOC's own capture solenoids, and pusher (13) with CHOC's linear actuator.
 // The sequence itself (states + durations) lives in GcPusher.cpp, not here.
 const GcPusher::Config kGrahamCracker2 = {
     .capture = {kSlotDiscreteOut, 5},
@@ -113,7 +116,6 @@ const GcPusher::Config kGrahamCracker2 = {
     .transitMs = 3000,
     .clearMs = 2000,
 };
-
 
 // Not under test right now: the oven never touches its hardware and always
 // reports ready, so the rest of the line can run without it.
