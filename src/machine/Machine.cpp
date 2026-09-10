@@ -1,6 +1,7 @@
 #include "machine/Machine.h"
 
 #include <Arduino.h>
+#include <ctype.h>
 
 #include "Log.h"
 
@@ -97,15 +98,25 @@ void Machine::printStatus() const {
     }
 }
 
+namespace {
+std::string toLower(std::string s) {
+    for (char& c : s) {
+        c = tolower(static_cast<unsigned char>(c));
+    }
+    return s;
+}
+}  // namespace
+
 bool Machine::selfTestNamed(const char* name) const {
+    std::string target = toLower(name);
     for (Station* station : m_line) {
-        if (station->name() == name) {
+        if (toLower(station->name()) == target) {
             station->selfTest();
             return true;
         }
     }
     for (Station* station : m_continuous) {
-        if (station->name() == name) {
+        if (toLower(station->name()) == target) {
             station->selfTest();
             return true;
         }

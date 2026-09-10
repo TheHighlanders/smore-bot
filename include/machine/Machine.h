@@ -26,7 +26,8 @@ class Machine {
 
     void printStatus() const;
 
-    // Bring-up: run one station's selfTest by name. False if no such station.
+    // Bring-up: run one station's selfTest by name, case-insensitive. False if
+    // no such station.
     bool selfTestNamed(const char* name) const;
 
    private:
