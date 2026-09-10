@@ -1,99 +1,59 @@
 #include "stations/Oven.h"
 
-#include "Arduino.h"
+#include <Arduino.h>
 
-void Oven::update() {
-    if (active) {
-        // Update tray status tracking
-        // TODO: Replace with more robust detection
-        trayInside =
-            hardware.readDiscrete(config.trayEntrySense) &&
-            !(trayInside && hardware.readDiscrete(config.trayExitSense));
+#include "Log.h"
 
+Oven::Oven(std::string name, P1AM& p1, Config config)
+    : Station(name, timingFor(config)), m_p1(p1), m_config(config) {}
 
-        if(hardware.readDiscrete(config.trayExitSense) || exitSerial.read()){
-            m_machine->onWorkCompleteCallback(this);
-        }
+Station::Timing Oven::timingFor(const Config& config) {
+    return Timing{config.transitMs, config.cookMs, config.clearMs};
+}
+
+void Oven::poll(bool /*machineRunning*/) {
+    if (!m_config.enabled) {
+        return;  // Not under test: no hardware touched.
     }
+    m_temperature = m_p1.readTemperature(m_config.thermistor);  // Display only
+}
 
-    if (m_machine->isRunning()) {
-        // TODO: Units????
-        temperature = hardware.readTemperature(config.thermistor);
-
-        // if (temperature != 0) {  // Check for error sentinel
-            if (temperature < (config.tempSetpoint - config.tempDeadzone)) {
-                // If temperature is too low, activate relay
-                hardware.writeDiscrete(1, config.relaySolenoid);
-                if(atTemp){
-                    // Falling Edge Detection
-                    logUpdate("Update: %s: Heating", name().c_str());
-                }
-                atTemp = false;
-            } else if (temperature >
-                       (config.tempSetpoint + config.tempDeadzone)) {
-                hardware.writeDiscrete(0, config.relaySolenoid);
-            } else {
-                if(!atTemp){
-                    // Check Edge Detection
-                    logUpdate("Update: %s: At Temp", name().c_str());
-                }
-                atTemp = true;
-            }
-        // }
-        // logInfo("Oven Temp: %f", temperature);
-        if(tempSerial.read()){
-            atTemp = true;
-        }
-    } else {
-        hardware.writeDiscrete(0, config.relaySolenoid); // Disable Heating when not running
+void Oven::onActivate() {
+    if (m_config.enabled) {
+        m_p1.writeDiscrete(1, m_config.heater);
+        m_p1.writeDiscrete(1, m_config.hold);
     }
 }
 
-bool Oven::activate(Machine* machine) {
-    m_machine = machine;
-    active = atTemp && !trayInside;  // Activate if oven is hot, and there
-                                     // is no other marshmallow inside.
-
-    if (active) {
-        hardware.writeDiscrete(1, config.trayholdSolenoid);
-        logInfo("Station %s active", name().c_str());
-        Machine::timer.in(round(cookTime*1000), ovenTimerCallback, this); // Invoke ovenTimerCallback with `this` as arguement in cookTime seconds.
-    } else {
-        logError("Station %s unable to activate", name().c_str());
+void Oven::onRelease() {
+    if (m_config.enabled) {
+        m_p1.writeDiscrete(0, m_config.heater);
+        m_p1.writeDiscrete(0, m_config.hold);
     }
-    return active;
 }
 
-void Oven::deactivate() {
-    logInfo("Station %s inactive", name().c_str());
-    hardware.writeDiscrete(0, config.trayholdSolenoid);
-    active = false;
+std::string Oven::detail() const {
+    if (!m_config.enabled) {
+        return "disabled";
+    }
+    return std::to_string(static_cast<int>(m_temperature)) + "F";
 }
 
-bool Oven::free() const { 
-    logInfo("Oven Not Free: %s %s %s", (active ? "Active" : "Inactive"), (atTemp ? "At Temp" : "Not At Temp"), (trayInside ? "Tray Inside" : "No Tray Inside"));
-    return !active && atTemp && !trayInside; 
-} // An Oven is free if it is at temperature, empty, and not otherwise active (should be redundant)
+void Oven::selfTest() {
+    if (!m_config.enabled) {
+        logLine("%s: disabled, skipping", name().c_str());
+        return;
+    }
 
-void Oven::eStop() {
-    // Depower Oven
-    hardware.writeDiscrete(0, config.relaySolenoid);
+    logLine("%s: tray hold solenoid", name().c_str());
+    m_p1.writeDiscrete(1, m_config.hold);
+    delay(kPulseMs);
+    m_p1.writeDiscrete(0, m_config.hold);
 
-    // Release Tray Solenoid
-    hardware.writeDiscrete(0, config.trayholdSolenoid);
+    logLine("%s: heater relay", name().c_str());
+    m_p1.writeDiscrete(1, m_config.heater);
+    delay(kPulseMs);
+    m_p1.writeDiscrete(0, m_config.heater);
 
-    active = false;
-    logError("STATION %s EMERGENCY STOPPED", name().c_str());
+    logLine("\tthermistor: %d F", (int)m_p1.readTemperature(m_config.thermistor));
 }
-
-bool Oven::ovenTimerCallback(void* argument){
-    //Used to allow callback function to be static
-    Oven* self = static_cast<Oven*>(argument);
-
-    logUpdate("Update: %s: Cook Complete", self->name().c_str());
-
-    self->m_machine->onWorkCompleteCallback(self);
-    return false;
-}
-
-std::string Oven::state() const { return std::string(active ? "active" : "inactive") + ", Oven Temp: " + std::to_string(round(temperature)); }

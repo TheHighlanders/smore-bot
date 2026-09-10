@@ -1,32 +1,33 @@
-#ifndef BELT_h
-#define BELT_h
+#ifndef BELT_H
+#define BELT_H
 
-#include "machine/Machine.h"
+#include <P1AM.h>
+
+#include <Arduino.h>
+
+#include "Log.h"
 #include "machine/Station.h"
-#include "P1AM.h"
 
-class Belt : public Station{
-    public:
-        struct BeltHWConfig{
-            channelLabel beltRelay;    // Output slot and channel with belt control relay connected
-        };
+// Runs whenever the machine runs. Never completes on its own.
+class Belt : public Station {
+   public:
+    Belt(std::string name, P1AM& p1, channelLabel relay)
+        : Station(name, Timing{0, kContinuous, 0}), m_p1(p1), m_relay(relay) {}
 
+    void selfTest() override {
+        logLine("%s: belt relay", name().c_str());
+        m_p1.writeDiscrete(1, m_relay);
+        delay(kPulseMs);
+        m_p1.writeDiscrete(0, m_relay);
+    }
 
-        Belt(std::string name, P1AM& p1, BeltHWConfig hwConfig) : Station(name), hardware(p1), config(hwConfig){}; // Constructs a Belt station. Names must be unique.
+   protected:
+    void onActivate() override { m_p1.writeDiscrete(1, m_relay); }
+    void onRelease() override { m_p1.writeDiscrete(0, m_relay); }
 
-        virtual void update() override; // Update the station (poll sensors, manage internal state, etc)
-
-        virtual bool activate(Machine* machine) override; // Activates a station to do work. Return indicates if it was accepted or not, fires Machine callback when done.
-        virtual void deactivate() override; // Returns the station to an inactive state.
-        virtual bool free() const override; // Is the station available to do work. (IE, has it been deactivated, and confirmed it is clear (if applicable))
-
-        virtual void eStop() override; // Safes all hardware connected to the station.
-
-        virtual std::string state() const override;
-
-    private:
-        P1AM hardware;
-        BeltHWConfig config;
+   private:
+    P1AM& m_p1;
+    channelLabel m_relay;
 };
 
 #endif

@@ -5,17 +5,18 @@
 #define PERSISTENT false
 
 #include <map>
+#include <string>
 
-// Class for managing received serial commands.
-// This will update an internal array of booleans, in two forms, either persistent, or ephemeral, with the difference being clear on read.
-// Default of both states are supported
+// A named boolean set by typing its key into the serial monitor.
+// EPHEMERAL keys clear on read (one-shot); PERSISTENT keys toggle.
 class SerialBoolean{
     public:
         SerialBoolean(std::string key, bool ephemeral = false, bool defaultValue = false);
         
         ~SerialBoolean();
 
-        static void parseInput(const char* input, size_t length);
+        // Returns false if the key is not registered.
+        static bool parseInput(const char* input, size_t length);
 
         bool read();
 
@@ -34,7 +35,9 @@ class SerialBoolean{
         // Sets the command to be distinct from its default
         void set();
 
-        static std::map<std::string, SerialBoolean*> registeredCommands;
+        // Construct-on-first-use: these objects are built in another
+        // translation unit, before a namespace-scope map would exist.
+        static std::map<std::string, SerialBoolean*>& registry();
 };
 
 #endif

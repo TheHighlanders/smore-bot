@@ -1,21 +1,24 @@
 #include "SerialBoolean.h"
 
-std::map<std::string, SerialBoolean*> SerialBoolean::registeredCommands;
+std::map<std::string, SerialBoolean*>& SerialBoolean::registry(){
+    static std::map<std::string, SerialBoolean*> commands;
+    return commands;
+}
 
 SerialBoolean::SerialBoolean(std::string key, bool ephemeral, bool defaultValue) : key(key), ephemeral(ephemeral), defaultValue(defaultValue){
     // Add to map
-    registeredCommands.emplace(key, this);
+    registry().emplace(key, this);
     currentValue = defaultValue;
 }
 
 SerialBoolean::~SerialBoolean(){
-    auto it = registeredCommands.find(key);
-    if(it != registeredCommands.end() && it->second == this){
-        registeredCommands.erase(it);
+    auto it = registry().find(key);
+    if(it != registry().end() && it->second == this){
+        registry().erase(it);
     }
 }
 
-void SerialBoolean::parseInput(const char* input, size_t length){
+bool SerialBoolean::parseInput(const char* input, size_t length){
     std::string inputStr(input, length);
 
     // Trim whitespace off the end
@@ -23,10 +26,16 @@ void SerialBoolean::parseInput(const char* input, size_t length){
         inputStr.pop_back();
     }
 
-    auto value = registeredCommands.find(inputStr);
-    if(value != registeredCommands.end()){
-        value->second->set();
+    if(inputStr.empty()){
+        return true;
     }
+
+    auto value = registry().find(inputStr);
+    if(value == registry().end()){
+        return false;
+    }
+    value->second->set();
+    return true;
 }
 
 void SerialBoolean::set(){

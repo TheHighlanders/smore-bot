@@ -1,64 +1,44 @@
-#ifndef OVEN_h
-#define OVEN_h
+#ifndef OVEN_H
+#define OVEN_H
 
-#include "machine/Machine.h"
+#include <P1AM.h>
+
 #include "machine/Station.h"
-#include "SerialBoolean.h"
-#include "P1AM.h"
 
-class Oven : public Station{
-    public:
-        struct OvenHWConfig{
-            channelLabel relaySolenoid;       // Output slot and channel with Oven heater relay connected
-            channelLabel trayEntrySense;      // Input slot and channel with tray entry sensor connected
-            channelLabel trayExitSense;       // Input slot and channel with tray exit sensor connected
-            channelLabel trayholdSolenoid;    // Output slot and channel with tray hold solenoid connected
-            channelLabel thermistor;          // Input slot and channle with thermistor connected
-            float tempSetpoint;               // Setpoint for temperature of the oven
-            float tempDeadzone;
-            float cookTime;
-        };
+// Holds a tray for cookMs, purely dead-reckoned. The heater relay and the
+// tray hold solenoid are on together for exactly that window - there is no
+// setpoint or control loop, and no preheating between trays. The thermistor
+// is read every tick for the status line only; nothing ever gates on it, so
+// a dead or unplugged probe cannot stall the line.
+class Oven : public Station {
+   public:
+    struct Config {
+        bool enabled;  // False: never touch the heater or hold solenoid
+        channelLabel heater;      // Heater relay
+        channelLabel hold;        // Tray hold solenoid
+        channelLabel thermistor;  // Read-only; never gates anything
+        uint32_t cookMs;          // Time the tray is held in the oven
+        uint32_t transitMs;       // Upstream release -> tray arrives here
+        uint32_t clearMs;         // Release -> tray fully past this station
+    };
 
-        // TODO: Config / setpoint / deadzone update live
-        Oven(std::string name, P1AM& p1, OvenHWConfig hwConfig, Machine* machine) : 
-            Station(name), 
-            hardware(p1), 
-            config(hwConfig), 
-            atTemp(false), 
-            trayInside(false), 
-            tempSerial(name+"temp", PERSISTENT), 
-            exitSerial(name+"exit", EPHEMERAL),
-            cookTime(config.cookTime) {
-            m_machine = machine;
-        } // Constructs a Oven station. Names must be unique.
+    Oven(std::string name, P1AM& p1, Config config);
 
-        virtual void update() override; // Update the station (poll sensors, manage internal state, etc)
+    void selfTest() override;
 
-        virtual bool activate(Machine* machine) override; // Activates a station to do work. Return indicates if it was accepted or not, fires Machine callback when done.
-        virtual void deactivate() override; // Returns the station to an inactive state.
-        virtual bool free() const override; // Is the station available to do work. (IE, has it been deactivated, and confirmed it is clear (if applicable))
+   protected:
+    void poll(bool machineRunning) override;
+    void onActivate() override;
+    void onRelease() override;
 
-        virtual void eStop() override; // Safes all hardware connected to the station.
+    std::string detail() const override;
 
-        static bool ovenTimerCallback(void* argument); // Callback fired after Oven timer elapses. Timer measures cook time
+   private:
+    static Timing timingFor(const Config& config);
 
-        void setCookTime(float cookTime); // Sets the Cook Time
-
-        virtual std::string state() const override;
-
-    private:
-        P1AM hardware;
-        OvenHWConfig config;
-
-        bool atTemp;
-        bool trayInside;
-
-        SerialBoolean tempSerial;
-        SerialBoolean exitSerial;
-
-        float temperature = 0;
-
-        float cookTime = 0;
+    P1AM& m_p1;
+    Config m_config;
+    float m_temperature = 0;
 };
 
 #endif
