@@ -33,13 +33,13 @@ static void reportInputs() {
 }
 
 static void handleLine(const String& line) {
-    if (line == "actuators") {
+    if (line == "arm") {
         armed = !armed;
         logLine("Actuators %s", armed ? "ARMED" : "disabled, read only");
         return;
     }
     if (!armed) {
-        logLine("Read only. Type 'actuators' to arm, then a station name.");
+        logLine("Read only. Type 'arm' to arm, then a station name.");
         return;
     }
     if (!rig::machine().selfTestNamed(line.c_str())) {
@@ -50,7 +50,7 @@ static void handleLine(const String& line) {
 void setup() {
     ready = rig::begin();
     if (ready) {
-        logLine("Bring-up, read only. 'actuators' arms them, then type a station name.");
+        logLine("Bring-up, read only. 'arm' arms them, then type a station name.");
     }
 }
 

@@ -62,7 +62,7 @@ bool begin() {
     }
 
     static LinearDispenser grahamCracker1("GC1", P1, config::kGrahamCracker1);
-    static LinearDispenser chocolate("CHOC", P1, config::kChocolate);
+    static LinearDispenser chocolate("CH", P1, config::kChocolate);
     static MotorDispenser marshmallow("MM", P1, config::kMarshmallow);
     static Oven oven("OVEN", P1, config::kOven);
     static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2);

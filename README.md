@@ -44,13 +44,29 @@ The line is `GC1 -> CHOC -> MM -> OVEN -> GC2`:
 | CHOC | `LinearDispenser` | One linear actuator: extend, dwell, retract |
 | MM | `MotorDispenser` | Motor relay + a light sensor: runs until the sensor reads blocked then clears (debounced 0.1s) |
 | OVEN | `Oven` | Heater relay, tray hold solenoid, optional thermistor. Disabled via `config::kOvenEnabled` |
-| GC2 | `GcPusher` | Linear actuator + gripper + lift: push, lower, grab, raise, release |
+| GC2 | `GcPusher` | Lifter + claw + pusher: a fixed 7-move sequence, see below |
 | BELT | `Belt` | One conveyor motor output, runs continuously |
 
 Each station carries its own `transitMs` and `clearMs` in its own `Config`, so
 timings are tuned one station at a time. Work duration is never configured
 directly: every station sums its own actuator sequence, so a station's phase
 duration cannot drift out of step with the moves it actually performs.
+
+`GcPusher` (GC2) is the one exception to "configure the sequence in Config.h":
+its moves are a fixed table in `GcPusher.cpp`, each row naming the state of
+the lifter, claw, and pusher together with how long to hold it -
+```
+lifter up,   claw open,   pusher out,  5s
+lifter down, claw open,   pusher out,  2s
+lifter down, claw closed, pusher out,  2s
+lifter up,   claw closed, pusher in,   5s
+lifter down, claw closed, pusher in,   2s
+lifter down, claw open,   pusher in,   1s
+lifter up,   claw open,   pusher in,   2s
+```
+so the sequence reads as one list end to end rather than being reconstructed
+from separate config fields. The tray stop is Config.h's `capture` channel,
+unrelated to this table.
 
 `src/Rig.cpp` holds everything both builds share: base start-up, module
 verification, the station line, and the operator inputs. `src/main.cpp` and
@@ -103,8 +119,8 @@ The onboard LED is off while read only.
 Type a station's name (`GC1`, `CHOC`, `MM`, `OVEN`, `GC2`, `BELT`; case does
 not matter) to run just that one station's sequence - nothing else moves.
 Typing one while read only prints a reminder instead. `GcPusher` steps through
-its real push/lower/grab/raise/release order rather than firing solenoids
-individually, so the moves happen in an order the rig can survive.
+its real move sequence rather than firing outputs individually, so the moves
+happen in an order the rig can survive.
 
 A bring-up build never starts the machine and never starts the watchdog. Each
 station tests its own hardware using the same config the real code uses, so
