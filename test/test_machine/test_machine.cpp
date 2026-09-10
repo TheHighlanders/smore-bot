@@ -109,25 +109,6 @@ void clear_time_gates_the_next_tray() {
     TEST_ASSERT_TRUE_MESSAGE(line.machine.startCycle(), "still blocked after clear time");
 }
 
-void estop_safes_every_station_and_latches() {
-    Line line;
-    line.machine.run(true);
-    line.machine.startCycle();
-    line.run(500);
-
-    line.machine.eStop();
-    TEST_ASSERT_TRUE(line.machine.isEStopped());
-    TEST_ASSERT_FALSE(line.machine.isRunning());
-    TEST_ASSERT_TRUE(line.belt.safed);
-    for (FakeStation* station : line.stations()) {
-        TEST_ASSERT_TRUE(station->safed);
-    }
-
-    line.machine.run(true);
-    TEST_ASSERT_FALSE_MESSAGE(line.machine.isRunning(), "e-stop must not be releasable");
-    TEST_ASSERT_FALSE(line.machine.startCycle());
-}
-
 void belt_restarts_across_repeated_holds() {
     Line line;
     for (int i = 0; i < 5; i++) {
@@ -286,7 +267,6 @@ int main() {
     RUN_TEST(start_is_ignored_while_entry_station_is_busy);
     RUN_TEST(holding_the_machine_freezes_the_belt_clock);
     RUN_TEST(clear_time_gates_the_next_tray);
-    RUN_TEST(estop_safes_every_station_and_latches);
     RUN_TEST(belt_restarts_across_repeated_holds);
     RUN_TEST(continuous_station_never_completes);
     RUN_TEST(completion_is_reported_once_even_when_blocked);

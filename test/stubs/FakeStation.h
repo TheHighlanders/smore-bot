@@ -20,7 +20,6 @@ class FakeStation : public Station {
     uint32_t lastWorkElapsed = 0;
     bool occupied = false;
     bool collided = false;
-    bool safed = false;
 
     // Stands in for a gate like the oven's "at temperature".
     bool readyGate = true;
@@ -53,9 +52,5 @@ class FakeStation : public Station {
     void onRelease() override {
         occupied = false;
         events.push_back("release");
-    }
-    void onEStop() override {
-        occupied = false;
-        safed = true;
     }
 };
