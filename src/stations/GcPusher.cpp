@@ -17,20 +17,20 @@ struct Move {
 // bundled per move rather than split apart, so the sequence reads as one
 // list end to end - see the header for the walk-through.
 const Move kMoves[] = {
-    {true, false, true, 5000},
-    {false, false, true, 2000},
-    {false, true, true, 2000},
-    {true, true, false, 5000},
-    {false, true, false, 2000},
-    {false, false, false, 1000},
-    {true, false, false, 2000},
+    {true, false, true, 7000}, // extend gc
+    {false, false, true, 2000}, // lower claw
+    {false, true, true, 2000}, // close claw
+    {true, true, false, 7000}, // raise claw, retract pusher
+    {false, true, false, 2000}, // lower claw
+    {false, false, false, 1000}, // open claw
+    {true, false, false, 2000}, // raise claw
 };
 const size_t kMoveCount = sizeof(kMoves) / sizeof(kMoves[0]);
 
 }  // namespace
 
 GcPusher::GcPusher(std::string name, P1AM& p1, Config config)
-    : Station(name, timingFor(config)), m_p1(p1), m_config(config) {}
+    : Station(name, timingFor(config)), m_p1(p1), m_config(config), m_move(kMoveCount) {}
 
 Station::Timing GcPusher::timingFor(const Config& config) {
     uint32_t total = 0;
@@ -76,7 +76,7 @@ void GcPusher::applyMove(size_t index) {
     }
     m_move = index;
     const Move& move = kMoves[index];
-    m_p1.writeDiscrete(move.lifterUp, m_config.lifter);
+    m_p1.writeDiscrete(!move.lifterUp, m_config.lifter); // The lifter defaults up
     m_p1.writeDiscrete(move.clawClosed, m_config.claw);
     m_p1.writeDiscrete(move.pusherOut, m_config.pusher);
     logLine("%s: lifter %s, claw %s, pusher %s", name().c_str(), move.lifterUp ? "up" : "down",
