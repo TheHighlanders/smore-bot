@@ -43,7 +43,7 @@ const size_t kModuleCount = sizeof(kModules) / sizeof(kModules[0]);
 // Thermistor module: high-side burnout, degF, 10k-CP (type 3), all channels on.
 const char kThermistorSetup[] = {0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00};
 
-const channelLabel kStartButton = {kSlotDiscreteIn, 10};
+const channelLabel kStartButton = {kSlotDiscreteIn, 11};
 // The e-stop is entirely hardware: it cuts power directly, with no channel
 // and no software involvement at all.
 
@@ -81,8 +81,8 @@ const channelLabel kStartButton = {kSlotDiscreteIn, 10};
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 6},  // Not wired yet; placeholder to stay clear of GC2
     .extend = {kSlotDiscreteOut, 15},
-    .extendMs = 3600,  // Was 3000 extend + 600 dwell; the relay can't idle mid-stroke
-    .retractMs = 3000,
+    .extendMs = 5000,
+    .retractMs = 5000,
     .transitMs = 0,  // Entry station: nothing upstream to travel from
     .clearMs = 2000,
 };
@@ -90,9 +90,9 @@ const LinearDispenser::Config kGrahamCracker1 = {
 const LinearDispenser::Config kChocolate = {
     .capture = {kSlotDiscreteOut, 7},  // Not wired yet; placeholder to stay clear of GC2
     .extend = {kSlotDiscreteOut, 14},
-    .extendMs = 3600,  // Was 3000 extend + 600 dwell; the relay can't idle mid-stroke
-    .retractMs = 3000,
-    .transitMs = 3000,
+    .extendMs = 5000,
+    .retractMs = 5000,
+    .transitMs = 5000,
     .clearMs = 2000,
 };
 
@@ -100,8 +100,8 @@ const MotorDispenser::Config kMarshmallow = {
     .capture = {kSlotDiscreteOut, 3},
     .motor = {kSlotRelay, 8},
     .exitSensor = {kSlotDiscreteIn, 9},
-    .timeoutMs = 8000,  // CALIBRATE: safety bound if the sensor never triggers
-    .transitMs = 3000,
+    .timeoutMs = 5000,  // CALIBRATE: safety bound if the sensor never triggers
+    .transitMs = 5000,
     .clearMs = 2000,
 };
 
@@ -111,7 +111,7 @@ const GcPusher::Config kGrahamCracker2 = {
     .lifter = {kSlotDiscreteOut, 2},
     .claw = {kSlotDiscreteOut, 1},
     .pusher = {kSlotDiscreteOut, 13},
-    .transitMs = 3000,
+    .transitMs = 5000,
     .clearMs = 2000,
 };
 
@@ -125,9 +125,9 @@ const Oven::Config kOven = {
     .heater = {kSlotRelay, 1},
     .hold = {kSlotDiscreteOut, 8},  // TBD, unconfirmed
     .thermistor = {kSlotThermistor, 1},  // Read-only; see Oven.h
-    .cookMs = 45000,
-    .transitMs = 3000,
-    .clearMs = 2500,
+    .cookMs = 3000,
+    .transitMs = 5000,
+    .clearMs = 5000,
 };
 
 const channelLabel kConveyorMotor = {kSlotDiscreteOut, 12};

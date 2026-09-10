@@ -92,11 +92,11 @@ extension. A dwell at full extension is therefore just more extend time, so
 `LinearDispenser::Config` has no separate `dwellMs`; fold any hold time
 straight into `extendMs`.
 
-The oven has no setpoint or control loop: its heater relay is simply on
-whenever the machine is running, and a tray's cook time is `cookMs`, dead
-reckoned like every other station's work duration. Its thermistor is read
-every tick purely for the status line - nothing ever gates on it, so a dead or
-unplugged probe cannot stall the line.
+The oven has no setpoint or control loop: its heater relay and tray hold
+solenoid are on together for exactly `cookMs`, the same dead-reckoned window
+every other station uses for its work duration - no preheating between trays.
+Its thermistor is read every tick purely for the status line - nothing ever
+gates on it, so a dead or unplugged probe cannot stall the line.
 
 ## Bring-up mode
 
