@@ -8,8 +8,7 @@ LinearDispenser::LinearDispenser(std::string name, P1AM& p1, Config config)
     : Station(name, timingFor(config)), m_p1(p1), m_config(config) {}
 
 Station::Timing LinearDispenser::timingFor(const Config& config) {
-    uint32_t stroke = config.extendMs + config.dwellMs + config.retractMs;
-    return Timing{config.transitMs, stroke, config.clearMs};
+    return Timing{config.transitMs, config.extendMs + config.retractMs, config.clearMs};
 }
 
 void LinearDispenser::onActivate() { m_p1.writeDiscrete(1, m_config.capture); }
@@ -17,18 +16,11 @@ void LinearDispenser::onActivate() { m_p1.writeDiscrete(1, m_config.capture); }
 void LinearDispenser::onArrive() { setExtended(true); }
 
 bool LinearDispenser::onWork(uint32_t elapsedMs) {
-    setExtended(elapsedMs < m_config.extendMs + m_config.dwellMs);
+    setExtended(elapsedMs < m_config.extendMs);
     return false;
 }
 
-void LinearDispenser::onComplete() { setExtended(false); }
-
 void LinearDispenser::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
-
-void LinearDispenser::onEStop() {
-    m_p1.writeDiscrete(0, m_config.capture);
-    setExtended(false);
-}
 
 void LinearDispenser::setExtended(bool extended) {
     if (extended == m_extended) {
@@ -47,7 +39,7 @@ void LinearDispenser::selfTest() {
 
     logLine("%s: actuator full stroke", name().c_str());
     setExtended(true);
-    delay(m_config.extendMs + m_config.dwellMs);
+    delay(m_config.extendMs);
     setExtended(false);
     delay(m_config.retractMs);
 }

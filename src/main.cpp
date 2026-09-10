@@ -31,26 +31,18 @@ void loop() {
         return;
     }
 
-    Machine& machine = rig::machine();
-
-    // Once e-stopped, stop talking to the base entirely. The watchdog goes
-    // unpetted, so it de-energizes every output and holds the CPU until a
-    // power cycle. That is the only way out of an e-stop.
-    if (machine.isEStopped()) {
+    // The e-stop is hardware now: nothing for software to read or act on. Loss
+    // of the base itself is the only fault left, and it needs no software
+    // response beyond this - skip the pet and let the HOLD watchdog take over.
+    if (!P1.isBaseActive() || P1.checkConnection() != 0) {
+        logLine("Base controller fault: not petting the watchdog");
+        digitalWrite(LED_BUILTIN, LOW);
         return;
     }
 
     P1.petWD();
 
-    // The e-stop button is hardware now and needs nothing from software. Loss
-    // of the base itself is the only fault left for software to react to.
-    if (!P1.isBaseActive() || P1.checkConnection() != 0) {
-        logLine("Base controller fault: stopping");
-        machine.eStop();
-        digitalWrite(LED_BUILTIN, LOW);
-        return;
-    }
-
+    Machine& machine = rig::machine();
     machine.run(rig::runSwitchOn());
 
     // A press while the entry station is occupied is ignored, not queued: the

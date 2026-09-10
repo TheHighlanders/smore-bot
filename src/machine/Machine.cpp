@@ -11,10 +11,6 @@ void Machine::configure(std::vector<Station*> line, std::vector<Station*> contin
 }
 
 void Machine::update() {
-    if (m_eStopped) {
-        return;
-    }
-
     uint32_t now = millis();
     if (m_running) {
         m_clock += now - m_lastTick;
@@ -51,14 +47,14 @@ void Machine::update() {
 }
 
 bool Machine::startCycle() {
-    if (!m_running || m_eStopped || m_line.empty()) {
+    if (!m_running || m_line.empty()) {
         return false;
     }
     return m_line.front()->activate(m_clock);
 }
 
 void Machine::run(bool enable) {
-    if (m_eStopped || enable == m_running) {
+    if (enable == m_running) {
         return;
     }
     m_running = enable;
@@ -76,20 +72,9 @@ void Machine::run(bool enable) {
     logLine("Machine %s", enable ? "running" : "held");
 }
 
-void Machine::eStop() {
-    m_eStopped = true;
-    m_running = false;
-    for (Station* station : m_line) {
-        station->eStop(m_clock);
-    }
-    for (Station* station : m_continuous) {
-        station->eStop(m_clock);
-    }
-}
-
 void Machine::printStatus() const {
-    logLine("Machine: %s%s, belt clock %lus", m_running ? "running" : "held",
-              m_eStopped ? ", E-STOPPED" : "", (unsigned long)(m_clock / 1000));
+    logLine("Machine: %s, belt clock %lus", m_running ? "running" : "held",
+              (unsigned long)(m_clock / 1000));
     for (Station* station : m_line) {
         logLine("\t%s: %s", station->name().c_str(), station->state().c_str());
     }

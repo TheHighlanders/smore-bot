@@ -62,14 +62,6 @@ bool GcPusher::onWork(uint32_t elapsedMs) {
 
 void GcPusher::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
 
-void GcPusher::onEStop() {
-    m_p1.writeDiscrete(0, m_config.capture);
-    m_p1.writeDiscrete(0, m_config.lifter);
-    m_p1.writeDiscrete(0, m_config.claw);
-    m_p1.writeDiscrete(0, m_config.pusher);
-    m_move = kMoveCount;
-}
-
 void GcPusher::applyMove(size_t index) {
     if (index == m_move) {
         return;

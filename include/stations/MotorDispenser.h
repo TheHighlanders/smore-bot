@@ -31,7 +31,6 @@ class MotorDispenser : public Station {
     bool onWork(uint32_t elapsedMs) override;
     void onComplete() override;
     void onRelease() override;
-    void onEStop() override;
 
    private:
     static const uint32_t kDebounceMs = 100;  // Clear must hold this long to count
