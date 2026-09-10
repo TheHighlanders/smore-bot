@@ -39,7 +39,7 @@ class GcPusher : public Station {
 
     P1AM& m_p1;
     Config m_config;
-    size_t m_move = 0;
+    size_t m_move;  // Set in the constructor; see kMoveCount in the .cpp
 };
 
 #endif
