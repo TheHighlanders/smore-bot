@@ -254,6 +254,19 @@ void self_test_named_runs_only_that_stations_sequence() {
     TEST_ASSERT_FALSE_MESSAGE(line.machine.selfTestNamed("NOPE"), "found a station that doesn't exist");
 }
 
+// Bring-up types whatever case a station's name happens to be in.
+void self_test_named_ignores_case() {
+    Line line;
+
+    TEST_ASSERT_TRUE_MESSAGE(line.machine.selfTestNamed("gc1"), "lowercase did not match");
+    TEST_ASSERT_TRUE_MESSAGE(line.machine.selfTestNamed("Choc"), "mixed case did not match");
+    TEST_ASSERT_TRUE_MESSAGE(line.machine.selfTestNamed("BELT"), "uppercase did not match");
+
+    TEST_ASSERT_EQUAL_INT(1, line.gc1.selfTests);
+    TEST_ASSERT_EQUAL_INT(1, line.choc.selfTests);
+    TEST_ASSERT_EQUAL_INT(1, line.belt.selfTests);
+}
+
 void belt_clock_survives_millis_rollover() {
     Line line;
     g_millis = 0xFFFFFF00u;  // ~256 ms before rollover
@@ -283,6 +296,7 @@ int main() {
     RUN_TEST(activate_is_rejected_unless_free);
     RUN_TEST(work_completes_early_when_the_sensor_reports_done);
     RUN_TEST(self_test_named_runs_only_that_stations_sequence);
+    RUN_TEST(self_test_named_ignores_case);
     RUN_TEST(belt_clock_survives_millis_rollover);
     return UNITY_END();
 }
