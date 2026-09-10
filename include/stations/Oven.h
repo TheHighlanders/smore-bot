@@ -5,10 +5,11 @@
 
 #include "machine/Station.h"
 
-// Holds a tray for cookMs, purely dead-reckoned. The heater relay is simply
-// on whenever the machine is running - there is no setpoint or control loop.
-// The thermistor is read every tick for the status line only; nothing ever
-// gates on it, so a dead or unplugged probe cannot stall the line.
+// Holds a tray for cookMs, purely dead-reckoned. The heater relay and the
+// tray hold solenoid are on together for exactly that window - there is no
+// setpoint or control loop, and no preheating between trays. The thermistor
+// is read every tick for the status line only; nothing ever gates on it, so
+// a dead or unplugged probe cannot stall the line.
 class Oven : public Station {
    public:
     struct Config {

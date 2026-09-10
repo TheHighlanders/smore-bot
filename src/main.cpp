@@ -9,6 +9,7 @@
 // Machine build. Runs the line; see BringUp.cpp for the hardware check build.
 
 static SerialBoolean statusCommand("status", EPHEMERAL);
+static SerialBoolean startCommand("start", EPHEMERAL);
 
 static bool ready = false;
 
@@ -47,7 +48,7 @@ void loop() {
 
     // A press while the entry station is occupied is ignored, not queued: the
     // operator can lean on the button and trays still come out one per cycle.
-    if (rig::startEdge() && !machine.startCycle()) {
+    if ((startCommand.read() || rig::startEdge()) && !machine.startCycle()) {
         logLine("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine held");
     }
 
