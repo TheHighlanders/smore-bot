@@ -13,12 +13,31 @@ Station::Timing MotorDispenser::timingFor(const Config& config) {
 
 void MotorDispenser::onActivate() { m_p1.writeDiscrete(1, m_config.capture); }
 
-void MotorDispenser::onArrive() { setRunning(true); }
+void MotorDispenser::onArrive() {
+    m_seenBlocked = false;
+    m_clearing = false;
+    setRunning(true);
+}
 
-bool MotorDispenser::onWork(uint32_t) {
-    if (!m_p1.readDiscrete(m_config.exitSensor)) {
+bool MotorDispenser::onWork(uint32_t elapsedMs) {
+    bool blocked = m_p1.readDiscrete(m_config.exitSensor);
+
+    if (blocked) {
+        m_seenBlocked = true;
+        m_clearing = false;
         return false;
     }
+    if (!m_seenBlocked) {
+        return false;  // Nothing has reached the sensor yet
+    }
+    if (!m_clearing) {
+        m_clearing = true;
+        m_clearSinceMs = elapsedMs;
+    }
+    if (elapsedMs - m_clearSinceMs < kDebounceMs) {
+        return false;  // Clear, but not long enough to trust yet
+    }
+
     setRunning(false);
     return true;
 }
@@ -53,14 +72,23 @@ void MotorDispenser::selfTest() {
     delay(kPulseMs);
     m_p1.writeDiscrete(0, m_config.capture);
 
-    logLine("%s: motor until exit sensor (timeout %lums)", name().c_str(),
+    logLine("%s: motor until exit sensor clears (timeout %lums)", name().c_str(),
             (unsigned long)m_config.timeoutMs);
     setRunning(true);
+
     uint32_t start = millis();
-    while (millis() - start < m_config.timeoutMs && !m_p1.readDiscrete(m_config.exitSensor)) {
+    bool seenBlocked = false;
+    while (millis() - start < m_config.timeoutMs) {
+        if (m_p1.readDiscrete(m_config.exitSensor)) {
+            seenBlocked = true;
+        } else if (seenBlocked) {
+            delay(kDebounceMs);
+            if (!m_p1.readDiscrete(m_config.exitSensor)) {
+                break;
+            }
+        }
         delay(20);
     }
     setRunning(false);
-    logLine("%s: exit sensor %s", name().c_str(),
-            m_p1.readDiscrete(m_config.exitSensor) ? "triggered" : "timed out");
+    logLine("%s: exit sensor %s", name().c_str(), seenBlocked ? "cleared" : "never triggered");
 }

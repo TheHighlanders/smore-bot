@@ -43,7 +43,7 @@ The line is `GC1 -> CHOC -> MM -> OVEN -> GC2`:
 | --- | --- | --- |
 | GC1 | `LinearDispenser` | One linear actuator: extend, dwell, retract |
 | CHOC | `LinearDispenser` | One linear actuator: extend, dwell, retract |
-| MM | `MotorDispenser` | Motor relay + a light sensor: runs until the sensor confirms the marshmallow has exited |
+| MM | `MotorDispenser` | Motor relay + a light sensor: runs until the sensor reads blocked then clears (debounced 0.1s) |
 | OVEN | `Oven` | Heater relay, tray hold solenoid, optional thermistor. Disabled via `config::kOvenEnabled` |
 | GC2 | `GcPusher` | Linear actuator + gripper + lift: push, lower, grab, raise, release |
 | BELT | `Belt` | One conveyor motor output, runs continuously |
@@ -101,11 +101,11 @@ The onboard LED is off while read only.
 | `actuators` | Toggle the actuator arm. Off at power-up; the LED lights when armed |
 | a station's name, e.g. `GC1` | Run that station's own `selfTest()`, armed only |
 
-Type a station's exact name (`GC1`, `CHOC`, `MM`, `OVEN`, `GC2`, `BELT`) to run
-just that one station's sequence - nothing else moves. Typing one while read
-only prints a reminder instead. `GcPusher` steps through its real
-push/lower/grab/raise/release order rather than firing solenoids individually,
-so the moves happen in an order the rig can survive.
+Type a station's name (`GC1`, `CHOC`, `MM`, `OVEN`, `GC2`, `BELT`; case does
+not matter) to run just that one station's sequence - nothing else moves.
+Typing one while read only prints a reminder instead. `GcPusher` steps through
+its real push/lower/grab/raise/release order rather than firing solenoids
+individually, so the moves happen in an order the rig can survive.
 
 A bring-up build never starts the machine and never starts the watchdog. Each
 station tests its own hardware using the same config the real code uses, so

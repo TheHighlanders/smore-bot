@@ -53,8 +53,10 @@ const channelLabel kStartButton = {kSlotDiscreteIn, 10};
 //   7     GC2 lift (raise/lower)
 //   8-11  TBD
 //   12    conveyor motor
-//   13-15 linear actuators: GC1, CHOC, GC2 push, in that order (ASSUMED -
-//         bring-up triggers one station at a time, so a swap shows up fast)
+//   13    CHOC linear actuator
+//   14    GC1 linear actuator
+//   15    GC2 push (linear actuator)
+// (13/14 were swapped after bring-up showed the wrong one moving per station)
 //
 // Relay (kSlotRelay, P1-08TRS) channel map:
 //   1  oven heater
@@ -75,20 +77,20 @@ const channelLabel kStartButton = {kSlotDiscreteIn, 10};
 
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 1},
-    .extend = {kSlotDiscreteOut, 13},
-    .extendMs = 700,
-    .dwellMs = 400,
-    .retractMs = 700,
+    .extend = {kSlotDiscreteOut, 14},
+    .extendMs = 1200,
+    .dwellMs = 600,
+    .retractMs = 1200,
     .transitMs = 0,  // Entry station: nothing upstream to travel from
     .clearMs = 2000,
 };
 
 const LinearDispenser::Config kChocolate = {
     .capture = {kSlotDiscreteOut, 2},
-    .extend = {kSlotDiscreteOut, 14},
-    .extendMs = 700,
-    .dwellMs = 400,
-    .retractMs = 700,
+    .extend = {kSlotDiscreteOut, 13},
+    .extendMs = 1200,
+    .dwellMs = 600,
+    .retractMs = 1200,
     .transitMs = 3000,
     .clearMs = 2000,
 };
@@ -97,7 +99,7 @@ const MotorDispenser::Config kMarshmallow = {
     .capture = {kSlotDiscreteOut, 3},
     .motor = {kSlotRelay, 8},
     .exitSensor = {kSlotDiscreteIn, 9},
-    .timeoutMs = 5000,  // CALIBRATE: safety bound if the sensor never triggers
+    .timeoutMs = 8000,  // CALIBRATE: safety bound if the sensor never triggers
     .transitMs = 3000,
     .clearMs = 2000,
 };
@@ -107,11 +109,11 @@ const GcPusher::Config kGrahamCracker2 = {
     .push = {kSlotDiscreteOut, 15},
     .grab = {kSlotDiscreteOut, 6},
     .lift = {kSlotDiscreteOut, 7},
-    .pushMs = 700,
-    .lowerMs = 400,
-    .grabMs = 300,
-    .raiseMs = 400,
-    .releaseMs = 300,
+    .pushMs = 900,
+    .lowerMs = 600,
+    .grabMs = 500,
+    .raiseMs = 600,
+    .releaseMs = 400,
     .transitMs = 3000,
     .clearMs = 2000,
 };
