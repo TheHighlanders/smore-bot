@@ -28,13 +28,16 @@ This code runs the smore making robot.
 
 The serial monitor shows messages from the robot.
 
-1. Click the plug button in the bar along the very bottom of VS Code.
+1. Click the plug button at the top right of VS Code.
 
    ![Serial monitor button](docs/images/serial-monitor-button.png)
 
 2. The robot's messages appear.
 
    ![Serial monitor connected](docs/images/serial-monitor-connected.png)
+
+   This picture shows the monitor trying to connect with no board plugged in.
+   With the robot plugged in, you also see its messages.
 
 3. To send a command, type it and press Enter.
 4. To close the monitor, click in it and press **Ctrl+C**.
