@@ -1,7 +1,7 @@
 #pragma once
 
-// Minimal Arduino surface so Machine and Station build on the host. Only what
-// they actually touch: millis() and the two Serial calls Log.h makes.
+// Minimal Arduino surface so Machine and Station build on the host: millis()
+// and the Serial calls Log.h makes.
 
 #include <stdint.h>
 #include <stdio.h>

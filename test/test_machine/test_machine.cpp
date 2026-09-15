@@ -31,8 +31,7 @@ struct Line {
     std::vector<FakeStation*> stations() { return {&gc1, &choc, &mm, &oven, &gc2}; }
 
     // Advances wall time in 10 ms steps, optionally leaning on the start button.
-    // Counts steps rather than computing an end time, so it works across the
-    // millis() rollover.
+    // Counting steps keeps the loop correct across the millis() rollover.
     void run(uint32_t durationMs, int traysToStart = 0) {
         int started = 0;
         for (uint32_t elapsed = 0; elapsed < durationMs; elapsed += 10) {
@@ -80,21 +79,24 @@ void start_is_ignored_while_entry_station_is_busy() {
     TEST_ASSERT_EQUAL_INT(1, line.gc1.activations);
 }
 
-void holding_the_machine_freezes_the_belt_clock() {
+void stopping_resets_every_station() {
     Line line;
     line.machine.run(true);
-    line.machine.startCycle();
-    line.run(500);  // Part way through GC1's 1500 ms of work
+    line.run(8000, 2);  // Trays spread across the first stations
 
     line.machine.run(false);
-    int completionsAtHold = line.gc1.completions;
-    line.run(60000);  // A minute of wall time with the belt stopped
-    TEST_ASSERT_EQUAL_INT_MESSAGE(completionsAtHold, line.gc1.completions,
-                                  "work advanced while the belt was stopped");
+    for (FakeStation* station : line.stations()) {
+        TEST_ASSERT_EQUAL_INT_MESSAGE(1, station->resets, "station was not reset");
+        TEST_ASSERT_FALSE(station->occupied);
+    }
+    TEST_ASSERT_EQUAL_INT(1, line.belt.resets);
+    TEST_ASSERT_FALSE(line.belt.occupied);
 
+    // Back on, the line starts fresh: GC1 accepts a tray right away.
     line.machine.run(true);
-    line.run(2000);
-    TEST_ASSERT_EQUAL_INT(1, line.gc1.completions);
+    TEST_ASSERT_TRUE_MESSAGE(line.machine.startCycle(), "entry station still busy after reset");
+    line.run(200000);
+    TEST_ASSERT_EQUAL_INT(1, line.gc2.completions);
 }
 
 void clear_time_gates_the_next_tray() {
@@ -129,9 +131,8 @@ void continuous_station_never_completes() {
     TEST_ASSERT_TRUE(line.belt.occupied);
 }
 
-// The rewrite exists to prevent a station reporting completion more than once;
-// the old design pushed a blocked station onto a held list every tick and
-// deadlocked. Block the oven cold and hold MM at Done for a long time.
+// A blocked station reports completion once and keeps its tray. Gate the oven
+// closed and hold MM at Done for a long time.
 void completion_is_reported_once_even_when_blocked() {
     Line line;
     line.oven.readyGate = false;  // Oven never comes up to temperature
@@ -199,9 +200,8 @@ void activate_is_rejected_unless_free() {
     TEST_ASSERT_TRUE(line.machine.startCycle());
 }
 
-// MM completes on its exit sensor, not a fixed timer: set the stand-in sensor
-// mid-work and confirm the station finishes right away instead of running out
-// the clock.
+// MM completes on its exit sensor: set the stand-in sensor mid-work and confirm
+// the station finishes on the next tick.
 void work_completes_early_when_the_sensor_reports_done() {
     Line line;
     line.machine.run(true);
@@ -215,9 +215,8 @@ void work_completes_early_when_the_sensor_reports_done() {
     TEST_ASSERT_TRUE_MESSAGE(line.gc1.lastWorkElapsed < 1500, "waited for the timer instead");
 }
 
-// The debug/bring-up entry point dispatches a typed station name straight to
-// Machine::selfTestNamed(); confirm it runs that one station's sequence and
-// none of the others, including the continuous one (the belt).
+// Bring-up dispatches a typed station name to Machine::selfTestNamed(); confirm
+// it runs exactly that station's sequence, the belt included.
 void self_test_named_runs_only_that_stations_sequence() {
     Line line;
 
@@ -248,7 +247,7 @@ void self_test_named_ignores_case() {
     TEST_ASSERT_EQUAL_INT(1, line.belt.selfTests);
 }
 
-void belt_clock_survives_millis_rollover() {
+void line_survives_millis_rollover() {
     Line line;
     g_millis = 0xFFFFFF00u;  // ~256 ms before rollover
     line.machine.run(true);
@@ -265,7 +264,7 @@ int main() {
     RUN_TEST(one_tray_visits_every_station_in_order);
     RUN_TEST(five_trays_never_collide);
     RUN_TEST(start_is_ignored_while_entry_station_is_busy);
-    RUN_TEST(holding_the_machine_freezes_the_belt_clock);
+    RUN_TEST(stopping_resets_every_station);
     RUN_TEST(clear_time_gates_the_next_tray);
     RUN_TEST(belt_restarts_across_repeated_holds);
     RUN_TEST(continuous_station_never_completes);
@@ -277,6 +276,6 @@ int main() {
     RUN_TEST(work_completes_early_when_the_sensor_reports_done);
     RUN_TEST(self_test_named_runs_only_that_stations_sequence);
     RUN_TEST(self_test_named_ignores_case);
-    RUN_TEST(belt_clock_survives_millis_rollover);
+    RUN_TEST(line_survives_millis_rollover);
     return UNITY_END();
 }

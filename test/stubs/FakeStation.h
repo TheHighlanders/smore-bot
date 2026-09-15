@@ -16,6 +16,7 @@ class FakeStation : public Station {
 
     int activations = 0;
     int completions = 0;
+    int resets = 0;
     int works = 0;
     uint32_t lastWorkElapsed = 0;
     bool occupied = false;
@@ -52,5 +53,9 @@ class FakeStation : public Station {
     void onRelease() override {
         occupied = false;
         events.push_back("release");
+    }
+    void onReset() override {
+        occupied = false;
+        resets++;
     }
 };

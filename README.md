@@ -136,29 +136,28 @@ base controller skips the pet, so the watchdog takes over.
 
 ## Tests
 
-`pio test -e native` runs the machine and station logic on the host. No board
-needed: `test/stubs/Arduino.h` supplies `millis()` and the two `Serial` calls
-the logger makes, and `FakeStation` stands in for real hardware, failing the
-test if the machine ever puts two trays in one station.
+`pio test -e native` runs the machine and station logic on the host, with no
+board. `test/stubs/Arduino.h` supplies `millis()` and the `Serial` calls the
+logger makes, and `FakeStation` stands in for hardware, flagging any moment two
+trays share a station.
 
-The tests cover the properties that are hard to check by eye on a machine with
-no sensors:
+The tests cover:
 
 - One tray visits every station exactly once, in order
-- Five trays with the start button held never collide, and the line drains
-- A blocked station reports completion exactly once, however long it waits.
-  This is the regression guard for the deadlock the rewrite exists to prevent
-- A station that is not ready (a cold oven) blocks the line, and the line
-  resumes when it comes ready
-- Start is ignored rather than queued while the entry station is busy, and
-  activation is refused while busy, clearing, or not ready
-- Lifecycle hooks fire in order, and `onWork` runs through the work phase
-  without overrunning it
-- The belt clock freezes while the machine is held
+- Five trays with the start button held pass through without collisions, and
+  the line drains
+- A blocked station reports completion once and keeps its tray
+- A station that is not ready (a cold oven) blocks the line, which resumes once
+  it is ready
+- A start press begins a cycle only when the entry station is free; activation
+  waits through busy, clearing, and not-ready states
+- Lifecycle hooks fire in order, and `onWork` runs for the whole work phase
+- Early completion from a sensor ends work on the next tick
+- Stopping resets every station, and the line starts fresh when switched back on
 - Clear time gates the next tray into a station
-- E-stop safes every station and cannot be released
-- The belt restarts across repeated holds, and never completes on its own
-- The belt clock survives the `millis()` rollover at ~49.7 days
+- The belt restarts across repeated stops and runs until reset
+- Bring-up's `selfTestNamed` runs exactly the named station, in any case
+- The line keeps running across the `millis()` rollover at ~49.7 days
 
 ## Useful Reference
 
