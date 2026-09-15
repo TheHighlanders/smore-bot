@@ -36,7 +36,7 @@ The serial monitor shows messages from the robot.
 
    ![Serial monitor connected](docs/images/serial-monitor-connected.png)
 
-3. To send a command, type it in small letters and press Enter.
+3. To send a command, type it and press Enter.
 4. To close the monitor, click in it and press **Ctrl+C**.
 
 **Close the monitor before you send new code.**

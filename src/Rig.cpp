@@ -82,6 +82,7 @@ bool readLine(String& line) {
         if (c == '\n') {
             line = buffer;
             line.trim();
+            line.toLowerCase();  // Commands and station names match in any case
             buffer = "";
             return true;
         }
