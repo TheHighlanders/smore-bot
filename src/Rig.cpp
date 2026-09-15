@@ -73,9 +73,8 @@ bool begin() {
     return true;
 }
 
-// Non-blocking: only ever consumes bytes already sitting in the input buffer,
-// so a command that has not fully arrived yet cannot stall the caller - the
-// periodic sensor report in particular must keep firing on schedule.
+// Consumes only bytes already buffered, so a partial command returns at once
+// and the caller's loop keeps its timing.
 bool readLine(String& line) {
     static String buffer;
     while (Serial.available()) {

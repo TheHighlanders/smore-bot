@@ -3,21 +3,29 @@
 
 #include <P1AM.h>
 
+#include <stddef.h>
+
 #include "machine/Station.h"
 
-// Places a graham cracker by stepping a lifter, claw, and pusher through a
-// fixed list of positions, each held for its own duration. Every move names
-// the state of all three outputs together with how long to hold it, so
-// holding one output steady across several moves is just repeating its value
-// in the table rather than special-cased logic - see kMoves in the .cpp.
+// Places a graham cracker by stepping the lifter, claw and pusher through
+// Config::moves. Each move sets all three outputs and holds them for its own
+// duration; the station's work duration is the sum of those holds.
 class GcPusher : public Station {
    public:
+    struct Move {
+        bool lifterUp;
+        bool clawClosed;
+        bool pusherOut;
+        uint32_t ms;  // Hold time
+    };
+
     struct Config {
         channelLabel capture;  // Tray stop
-        channelLabel lifter;   // Energize to raise
+        channelLabel lifter;   // Energize to lower; rests up
         channelLabel claw;     // Energize to close
         channelLabel pusher;   // Energize to push out
-
+        const Move* moves;     // One full cycle, in order
+        size_t moveCount;
         uint32_t transitMs;  // Upstream release -> tray arrives here
         uint32_t clearMs;    // Release -> tray fully past this station
     };
@@ -31,6 +39,7 @@ class GcPusher : public Station {
     void onArrive() override;
     bool onWork(uint32_t elapsedMs) override;
     void onRelease() override;
+    void onReset() override;
 
    private:
     static Timing timingFor(const Config& config);
@@ -38,7 +47,7 @@ class GcPusher : public Station {
 
     P1AM& m_p1;
     Config m_config;
-    size_t m_move;  // Set in the constructor; see kMoveCount in the .cpp
+    size_t m_move;  // Index of the applied move; moveCount before the first
 };
 
 #endif

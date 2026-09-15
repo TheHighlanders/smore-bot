@@ -32,9 +32,8 @@ void loop() {
         return;
     }
 
-    // The e-stop is hardware now: nothing for software to read or act on. Loss
-    // of the base itself is the only fault left, and it needs no software
-    // response beyond this - skip the pet and let the HOLD watchdog take over.
+    // Base controller lost: skip the pet so the HOLD watchdog de-energizes
+    // every output.
     if (!P1.isBaseActive() || P1.checkConnection() != 0) {
         logLine("Base controller fault: not petting the watchdog");
         digitalWrite(LED_BUILTIN, LOW);
@@ -44,12 +43,14 @@ void loop() {
     P1.petWD();
 
     Machine& machine = rig::machine();
+    // Switching off resets every station; the operator clears the belt before
+    // switching back on.
     machine.run(rig::runSwitchOn());
 
-    // A press while the entry station is occupied is ignored, not queued: the
-    // operator can lean on the button and trays still come out one per cycle.
+    // A press starts a cycle when the entry station is free, so a held button
+    // yields one tray per cycle.
     if ((startCommand.read() || rig::startEdge()) && !machine.startCycle()) {
-        logLine("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine held");
+        logLine("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine stopped");
     }
 
     machine.update();

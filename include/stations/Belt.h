@@ -8,7 +8,7 @@
 #include "Log.h"
 #include "machine/Station.h"
 
-// Runs whenever the machine runs. Never completes on its own.
+// Runs while the machine runs.
 class Belt : public Station {
    public:
     Belt(std::string name, P1AM& p1, channelLabel relay)
@@ -23,7 +23,7 @@ class Belt : public Station {
 
    protected:
     void onActivate() override { m_p1.writeDiscrete(1, m_relay); }
-    void onRelease() override { m_p1.writeDiscrete(0, m_relay); }
+    void onReset() override { m_p1.writeDiscrete(0, m_relay); }
 
    private:
     P1AM& m_p1;
