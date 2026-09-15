@@ -5,11 +5,11 @@
 #include "Log.h"
 #include "Rig.h"
 
-// Bring-up build, for checking wiring before the machine runs. Never starts
-// the machine and never starts the watchdog, so nothing needs to pet it.
+// Bring-up build, for checking wiring before the machine runs. The machine and
+// watchdog stay stopped.
 //
-// Type 'actuators' to arm, then a station's name to run its sequence.
-// Buttons and other inputs are only ever reported here, never acted on.
+// Inputs are reported every kReportMs. Type 'arm', then a station's name to run
+// that station's selfTest.
 
 static const uint32_t kReportMs = 5000;
 
@@ -50,7 +50,7 @@ static void handleLine(const String& line) {
 void setup() {
     ready = rig::begin();
     if (ready) {
-        logLine("Bring-up, read only. 'arm' arms them, then type a station name.");
+        logLine("Bring-up, read only. Type 'arm', then a station name.");
     }
 }
 

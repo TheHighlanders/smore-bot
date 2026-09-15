@@ -22,6 +22,12 @@ bool LinearDispenser::onWork(uint32_t elapsedMs) {
 
 void LinearDispenser::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
 
+void LinearDispenser::onReset() {
+    m_p1.writeDiscrete(0, m_config.capture);
+    m_p1.writeDiscrete(0, m_config.extend);
+    m_extended = false;
+}
+
 void LinearDispenser::setExtended(bool extended) {
     if (extended == m_extended) {
         return;

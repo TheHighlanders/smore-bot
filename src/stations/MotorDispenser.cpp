@@ -35,7 +35,7 @@ bool MotorDispenser::onWork(uint32_t elapsedMs) {
         m_clearSinceMs = elapsedMs;
     }
     if (elapsedMs - m_clearSinceMs < kDebounceMs) {
-        return false;  // Clear, but not long enough to trust yet
+        return false;  // Clear, still debouncing
     }
 
     setRunning(false);
@@ -44,13 +44,19 @@ bool MotorDispenser::onWork(uint32_t elapsedMs) {
 
 void MotorDispenser::onComplete() {
     if (m_running) {
-        // Reached here via the timeoutMs bound, not the sensor.
+        // Still running here means timeoutMs expired.
         logLine("%s: exit sensor never triggered, stopping on timeout", name().c_str());
         setRunning(false);
     }
 }
 
 void MotorDispenser::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
+
+void MotorDispenser::onReset() {
+    m_p1.writeDiscrete(0, m_config.capture);
+    m_p1.writeDiscrete(0, m_config.motor);
+    m_running = false;
+}
 
 void MotorDispenser::setRunning(bool running) {
     if (running == m_running) {

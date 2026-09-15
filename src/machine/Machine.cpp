@@ -12,24 +12,19 @@ void Machine::configure(std::vector<Station*> line, std::vector<Station*> contin
 
 void Machine::update() {
     uint32_t now = millis();
-    if (m_running) {
-        m_clock += now - m_lastTick;
-        m_lastTick = now;
-    }
-
     for (Station* station : m_continuous) {
-        station->update(m_clock, m_running);
+        station->update(now);
     }
     for (Station* station : m_line) {
-        station->update(m_clock, m_running);
+        station->update(now);
     }
 
     if (!m_running) {
         return;
     }
 
-    // Downstream first, so a tray never advances into a station that is itself
-    // advancing this tick.
+    // Downstream first, so each free() check sees the moves already made further
+    // down the line this tick.
     for (size_t i = m_line.size(); i-- > 0;) {
         Station* station = m_line[i];
         if (!station->done()) {
@@ -37,11 +32,11 @@ void Machine::update() {
         }
 
         if (i + 1 == m_line.size()) {
-            station->deactivate(m_clock);
+            station->deactivate(now);
             logLine("Cycle complete");
         } else if (m_line[i + 1]->free()) {
-            station->deactivate(m_clock);
-            m_line[i + 1]->activate(m_clock);
+            station->deactivate(now);
+            m_line[i + 1]->activate(now);
         }
     }
 }
@@ -50,7 +45,7 @@ bool Machine::startCycle() {
     if (!m_running || m_line.empty()) {
         return false;
     }
-    return m_line.front()->activate(m_clock);
+    return m_line.front()->activate(millis());
 }
 
 void Machine::run(bool enable) {
@@ -59,22 +54,23 @@ void Machine::run(bool enable) {
     }
     m_running = enable;
 
-    // Resume the clock from now so time spent held is not counted as travel.
-    m_lastTick = millis();
-
-    for (Station* station : m_continuous) {
-        if (enable) {
-            station->activate(m_clock);
-        } else {
-            station->deactivate(m_clock);
+    if (enable) {
+        for (Station* station : m_continuous) {
+            station->activate(millis());
+        }
+    } else {
+        for (Station* station : m_continuous) {
+            station->reset();
+        }
+        for (Station* station : m_line) {
+            station->reset();
         }
     }
-    logLine("Machine %s", enable ? "running" : "held");
+    logLine("Machine %s", enable ? "running" : "stopped, stations reset");
 }
 
 void Machine::printStatus() const {
-    logLine("Machine: %s, belt clock %lus", m_running ? "running" : "held",
-              (unsigned long)(m_clock / 1000));
+    logLine("Machine: %s", m_running ? "running" : "stopped");
     for (Station* station : m_line) {
         logLine("\t%s: %s", station->name().c_str(), station->state().c_str());
     }

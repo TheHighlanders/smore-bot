@@ -11,24 +11,22 @@ Station::Timing Oven::timingFor(const Config& config) {
     return Timing{config.transitMs, config.cookMs, config.clearMs};
 }
 
-void Oven::poll(bool /*machineRunning*/) {
-    if (!m_config.enabled) {
-        return;  // Not under test: no hardware touched.
-    }
-    m_temperature = m_p1.readTemperature(m_config.thermistor);  // Display only
-}
-
-void Oven::onActivate() {
+void Oven::poll() {
     if (m_config.enabled) {
-        m_p1.writeDiscrete(1, m_config.heater);
-        m_p1.writeDiscrete(1, m_config.hold);
+        m_temperature = m_p1.readTemperature(m_config.thermistor);
     }
 }
 
-void Oven::onRelease() {
+void Oven::onActivate() { setHeating(true); }
+
+void Oven::onRelease() { setHeating(false); }
+
+void Oven::onReset() { setHeating(false); }
+
+void Oven::setHeating(bool on) {
     if (m_config.enabled) {
-        m_p1.writeDiscrete(0, m_config.heater);
-        m_p1.writeDiscrete(0, m_config.hold);
+        m_p1.writeDiscrete(on, m_config.heater);
+        m_p1.writeDiscrete(on, m_config.hold);
     }
 }
 

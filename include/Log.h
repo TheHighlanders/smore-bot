@@ -4,11 +4,10 @@
 #include <Arduino.h>
 #include <stdarg.h>
 
-// One line to the serial monitor.
-//
-// The printf attribute makes a format that does not match its arguments a
-// build error; platformio.ini sets -Werror=format. Serial.printf truncates at
-// 80 bytes, so the line is built first and printed whole.
+// Prints one formatted line. Kept over Serial.printf for two reasons: the printf
+// attribute, with -Werror=format in platformio.ini, checks every format against
+// its arguments at build time, and the 160-byte buffer holds lines past
+// Serial.printf's 80-byte limit.
 __attribute__((format(printf, 1, 2)))
 inline void logLine(const char* fmt, ...) {
     char buffer[160];

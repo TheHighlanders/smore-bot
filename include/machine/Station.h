@@ -5,16 +5,16 @@
 
 #include <string>
 
-// A station with no sensors: every phase advances on elapsed belt time.
+// A timed station. Each phase advances on elapsed time:
 //
 //   Idle --activate--> Arriving --transitMs--> Working --workMs--> Done
 //   Done --deactivate--> Clearing --clearMs--> Idle
 //
-// Subclasses supply hardware actions only; all timing and state live here, so
-// there is exactly one place where a station can report completion.
+// reset() returns any phase to Idle with every output de-energized.
+// Subclasses supply hardware actions; timing and phase state live here.
 class Station {
    public:
-    // Work that only ends when the station is deactivated (e.g. the belt).
+    // Work that lasts until the station is reset (e.g. the belt).
     static const uint32_t kContinuous = 0xFFFFFFFFu;
 
     struct Timing {
@@ -26,12 +26,13 @@ class Station {
     Station(std::string name, Timing timing) : m_name(name), m_timing(timing) {}
     virtual ~Station() {}
 
-    void update(uint32_t clock, bool machineRunning);
+    void update(uint32_t clock);
 
-    bool activate(uint32_t clock);    // Rejected unless free()
+    bool activate(uint32_t clock);    // Accepted when free()
     void deactivate(uint32_t clock);  // Release the tray and start clearing
+    void reset();                     // Back to Idle with outputs off
 
-    // Bring-up: pulse this station's actuators and report its inputs.
+    // Bring-up: run this station's actuators through their motions.
     virtual void selfTest() = 0;
 
     bool free() const { return m_phase == Phase::Idle && ready(); }
@@ -45,20 +46,16 @@ class Station {
 
     virtual void onActivate() {}  // Tray released upstream: extend the stop
     virtual void onArrive() {}    // Tray is here: start working
-    virtual void onComplete() {}  // Work finished: park actuators
 
-    // Every tick while Working, with time elapsed in this phase. Stations whose
-    // work is a sequence of actuator moves drive it from here. Return true to
-    // finish immediately (e.g. a sensor confirms the product has left); a
-    // station that only needs a timer can ignore elapsedMs and let workMs
-    // expire instead.
+    // Every tick while Working, with time elapsed in this phase. Return true to
+    // finish now (e.g. MM's exit sensor); false lets workMs time out.
     virtual bool onWork(uint32_t /*elapsedMs*/) { return false; }
-    virtual void onRelease() {}  // Let the tray go
 
-    // Runs every tick in every phase, including Idle. This is what keeps the
-    // oven heating while nothing is in it.
-    virtual void poll(bool /*machineRunning*/) {}
+    virtual void onComplete() {}  // Work finished: park actuators
+    virtual void onRelease() {}   // Let the tray go
+    virtual void onReset() = 0;   // De-energize every output
 
+    virtual void poll() {}                             // Every tick, in every phase
     virtual bool ready() const { return true; }        // Extra gate on free()
     virtual std::string detail() const { return ""; }  // Appended to state()
 

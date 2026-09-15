@@ -42,7 +42,7 @@ void SerialBoolean::set(){
     if(ephemeral){
         currentValue = !defaultValue;
     } else {
-        // Persistent Booleans need to be toggled off
+        // Persistent booleans toggle
         currentValue = !currentValue;
     }
 }

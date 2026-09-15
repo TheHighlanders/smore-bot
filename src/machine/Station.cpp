@@ -2,13 +2,12 @@
 
 #include "Log.h"
 
-// Open-loop machines have no jam feedback, so warn once if a finished station
-// waits this long for the one downstream. Must exceed the total occupancy of
-// the slowest station on the line, or a healthy full pipeline trips it.
+// Warn once when a finished station waits this long for the next one. Set above
+// the longest station occupancy on the line.
 static const uint32_t kStallWarnMs = 120000;
 
-void Station::update(uint32_t clock, bool machineRunning) {
-    poll(machineRunning);
+void Station::update(uint32_t clock) {
+    poll();
 
     switch (m_phase) {
         case Phase::Arriving:
@@ -32,8 +31,8 @@ void Station::update(uint32_t clock, bool machineRunning) {
         case Phase::Done:
             if (!m_stallReported && elapsed(clock) >= kStallWarnMs) {
                 m_stallReported = true;
-                logLine("%s: blocked %lus waiting on the next station",
-                         m_name.c_str(), (unsigned long)(elapsed(clock) / 1000));
+                logLine("%s: blocked %lus waiting on the next station", m_name.c_str(),
+                        (unsigned long)(elapsed(clock) / 1000));
             }
             break;
 
@@ -63,10 +62,14 @@ void Station::deactivate(uint32_t clock) {
         return;
     }
     onRelease();
-    // Skipping Clearing when there is nothing to clear keeps a station with no
-    // clear time immediately reusable.
+    // A station with clearMs 0 returns straight to Idle.
     enter(m_timing.clearMs ? Phase::Clearing : Phase::Idle, clock);
     logLine("%s: released", m_name.c_str());
+}
+
+void Station::reset() {
+    onReset();
+    enter(Phase::Idle, m_since);
 }
 
 std::string Station::state() const {

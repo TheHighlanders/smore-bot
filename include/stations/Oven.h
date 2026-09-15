@@ -5,18 +5,15 @@
 
 #include "machine/Station.h"
 
-// Holds a tray for cookMs, purely dead-reckoned. The heater relay and the
-// tray hold solenoid are on together for exactly that window - there is no
-// setpoint or control loop, and no preheating between trays. The thermistor
-// is read every tick for the status line only; nothing ever gates on it, so
-// a dead or unplugged probe cannot stall the line.
+// Holds a tray for cookMs with the heater relay and tray hold solenoid on
+// together for that window. The thermistor reading appears in the status line.
 class Oven : public Station {
    public:
     struct Config {
-        bool enabled;  // False: never touch the heater or hold solenoid
+        bool enabled;             // True drives the heater, hold and thermistor
         channelLabel heater;      // Heater relay
         channelLabel hold;        // Tray hold solenoid
-        channelLabel thermistor;  // Read-only; never gates anything
+        channelLabel thermistor;  // Shown in status
         uint32_t cookMs;          // Time the tray is held in the oven
         uint32_t transitMs;       // Upstream release -> tray arrives here
         uint32_t clearMs;         // Release -> tray fully past this station
@@ -27,14 +24,16 @@ class Oven : public Station {
     void selfTest() override;
 
    protected:
-    void poll(bool machineRunning) override;
+    void poll() override;
     void onActivate() override;
     void onRelease() override;
+    void onReset() override;
 
     std::string detail() const override;
 
    private:
     static Timing timingFor(const Config& config);
+    void setHeating(bool on);
 
     P1AM& m_p1;
     Config m_config;
