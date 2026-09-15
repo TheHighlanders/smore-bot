@@ -71,33 +71,87 @@ unpowered rest positions. Clear the belt, then switch back on to start fresh.
 
 ## Bring-up mode
 
-Flash `p1am_200_bringup` to check wiring before running the machine:
+The bring-up build checks wiring one station at a time before the machine runs.
+It reports inputs on its own and moves an actuator only on command. The machine
+and the watchdog stay stopped the whole time.
+
+### 1. Flash and connect
 
 ```
 pio run -e p1am_200_bringup -t upload
+pio device monitor
 ```
 
-It verifies the module layout and starts **read only**. Every 5 seconds it
-prints one line of input state:
+Type each command into the monitor and press Enter.
+
+### 2. Watch it start
+
+On boot it waits for the base controller, then checks the module layout
+against `config::kModules`:
+
+```
+Smore Bot starting, waiting for base controller
+No response? Check the external 24V supply is on.
+...
+Bring-up, read only. Type 'arm', then a station name.
+```
+
+A layout mismatch prints each wrong slot. Fix the base to match
+`include/Config.h` and power cycle.
+
+### 3. Check inputs (read only)
+
+Every 5 seconds it prints one line:
 
 ```
    35s  start:ON  mmExit:off  run:off  oven:72F
 ```
 
-`oven` reads `disabled` while `config::kOvenEnabled` is false. The onboard LED
-lights while armed.
-
-| Command | Effect |
+| Field | Input |
 | --- | --- |
-| `arm` | Toggle the actuator arm. Starts disarmed |
-| a station's name, e.g. `GC1` | Run that station's `selfTest()` while armed |
+| `start` | Start button, `config::kStartButton` |
+| `mmExit` | MM exit light sensor |
+| `run` | Faceplate run switch |
+| `oven` | Thermistor in degF, or `disabled` while `config::kOvenEnabled` is false |
 
-Station names are `GC1`, `CH`, `MM`, `OVEN`, `GC2` and `BELT`, in any case.
-`GcPusher` steps through its configured move table, so the moves happen in the
-order the rig expects.
+Press the button, break the MM beam, and flip the run switch, and watch each
+field change in the next report. Inputs are reported only; they start nothing.
 
-Each station tests its hardware through the same config the machine build uses.
-Reflash `p1am_200` to run the machine.
+### 4. Arm and test a station
+
+```
+arm
+GC1
+```
+
+`arm` toggles the actuators on and prints `Actuators ARMED`; the onboard LED
+lights while armed. Type `arm` again to return to read only. A station name
+typed while read only prints a reminder.
+
+Type a station's name to run that station's self test. Names match in any case:
+
+| Name | What moves |
+| --- | --- |
+| `GC1`, `CH` | Tray stop for 0.75s, then the linear actuator extends for `extendMs` and retracts for `retractMs` |
+| `MM` | Tray stop for 0.75s, then the motor runs until the exit sensor reads blocked then clear, or `timeoutMs` |
+| `OVEN` | Tray hold solenoid for 0.75s, heater relay for 0.75s, then prints the temperature. Skipped while disabled |
+| `GC2` | Tray stop for 0.75s, then every row of `config::kGrahamCracker2Moves` in order |
+| `BELT` | Conveyor output for 0.75s |
+
+Each step prints as it runs. A self test holds the serial loop until it
+finishes, so the 5-second report pauses for its duration (about 23s for GC2).
+
+Test stations one at a time, starting with the simplest: `BELT`, then `GC1`,
+`CH`, `MM`, `OVEN`, `GC2`. Stay clear of the rig while armed.
+
+### 5. Return to the machine build
+
+Self tests use the same `include/Config.h` as the machine build, so a channel
+that works here works there. When every station checks out:
+
+```
+pio run -e p1am_200 -t upload
+```
 
 ## Calibrating
 
