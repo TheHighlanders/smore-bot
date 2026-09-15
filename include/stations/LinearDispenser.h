@@ -1,0 +1,42 @@
+#ifndef LINEARDISPENSER_H
+#define LINEARDISPENSER_H
+
+#include <P1AM.h>
+
+#include "machine/Station.h"
+
+// Dispenses by extending a linear actuator for extendMs, then retracting it for
+// retractMs. The extend output drives a relay and the actuator stops at its own
+// limit switch, so extendMs covers travel plus any hold at full extension.
+class LinearDispenser : public Station {
+   public:
+    struct Config {
+        channelLabel capture;  // Tray stop
+        channelLabel extend;   // Energize to drive the actuator out
+        uint32_t extendMs;     // Travel out plus any hold
+        uint32_t retractMs;    // Travel back
+        uint32_t transitMs;    // Upstream release -> tray arrives here
+        uint32_t clearMs;      // Release -> tray fully past this station
+    };
+
+    LinearDispenser(std::string name, P1AM& p1, Config config);
+
+    void selfTest() override;
+
+   protected:
+    void onActivate() override;
+    void onArrive() override;
+    bool onWork(uint32_t elapsedMs) override;
+    void onRelease() override;
+    void onReset() override;
+
+   private:
+    static Timing timingFor(const Config& config);
+    void setExtended(bool extended);
+
+    P1AM& m_p1;
+    Config m_config;
+    bool m_extended = false;
+};
+
+#endif

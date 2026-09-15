@@ -1,150 +1,106 @@
 #include "machine/Machine.h"
 
-#include <algorithm>
+#include <Arduino.h>
+#include <ctype.h>
 
-#include "machine/Station.h"
+#include "Log.h"
 
-Timer<5, millis> Machine::timer;  // Define and allocate the timer.
+void Machine::configure(std::vector<Station*> line, std::vector<Station*> continuous) {
+    m_line = line;
+    m_continuous = continuous;
+}
 
 void Machine::update() {
-    if (!eStopped) {
-        // Update all stations
-        for (Station* station : stations) {
-            station->update();
-        }
-        for (Station* station : continuousStations){
-            station->update();
+    uint32_t now = millis();
+    for (Station* station : m_continuous) {
+        station->update(now);
+    }
+    for (Station* station : m_line) {
+        station->update(now);
+    }
+
+    if (!m_running) {
+        return;
+    }
+
+    // Downstream first, so each free() check sees the moves already made further
+    // down the line this tick.
+    for (size_t i = m_line.size(); i-- > 0;) {
+        Station* station = m_line[i];
+        if (!station->done()) {
+            continue;
         }
 
-        if (running) {
-            std::vector<Station*> stillHeldStations;
-            for (Station* station : heldStations) {
-                // These stations were not free to advance when they finished,
-                // they should be rechecked
-                logUpdate("Update: Machine: Retrying Held Station %s", station->name().c_str());
-                Station* next = getNextStation(station);
-                if (next && next->free()) {
-                    station->deactivate();
-
-                    if(next->activate(this)){
-                        logInfo("\tSuccess");
-                        continue;
-                    }
-                    logError("\tUnable to Activate Next");
-                } else {
-                    logError("\tNext Station Not Free");
-                }
-                stillHeldStations.push_back(station);
-            }
-            heldStations = stillHeldStations;
+        if (i + 1 == m_line.size()) {
+            station->deactivate(now);
+            logLine("Cycle complete");
+        } else if (m_line[i + 1]->free()) {
+            station->deactivate(now);
+            m_line[i + 1]->activate(now);
         }
     }
 }
 
 bool Machine::startCycle() {
-    if (running && !eStopped && stations.size()) {
-        return stations[0]->activate(this);
+    if (!m_running || m_line.empty()) {
+        return false;
+    }
+    return m_line.front()->activate(millis());
+}
+
+void Machine::run(bool enable) {
+    if (enable == m_running) {
+        return;
+    }
+    m_running = enable;
+
+    if (enable) {
+        for (Station* station : m_continuous) {
+            station->activate(millis());
+        }
+    } else {
+        for (Station* station : m_continuous) {
+            station->reset();
+        }
+        for (Station* station : m_line) {
+            station->reset();
+        }
+    }
+    logLine("Machine %s", enable ? "running" : "stopped, stations reset");
+}
+
+void Machine::printStatus() const {
+    logLine("Machine: %s", m_running ? "running" : "stopped");
+    for (Station* station : m_line) {
+        logLine("\t%s: %s", station->name().c_str(), station->state().c_str());
+    }
+    for (Station* station : m_continuous) {
+        logLine("\t%s: %s", station->name().c_str(), station->state().c_str());
+    }
+}
+
+namespace {
+std::string toLower(std::string s) {
+    for (char& c : s) {
+        c = tolower(static_cast<unsigned char>(c));
+    }
+    return s;
+}
+}  // namespace
+
+bool Machine::selfTestNamed(const char* name) const {
+    std::string target = toLower(name);
+    for (Station* station : m_line) {
+        if (toLower(station->name()) == target) {
+            station->selfTest();
+            return true;
+        }
+    }
+    for (Station* station : m_continuous) {
+        if (toLower(station->name()) == target) {
+            station->selfTest();
+            return true;
+        }
     }
     return false;
 }
-
-void Machine::stop() {if(running){
-    for(auto station : continuousStations){
-        station->deactivate();
-    }
-    running = false; 
-}}
-
-void Machine::resume() {
-    if (!running) {
-        for(auto station : continuousStations){
-            station->activate(this);
-        }
-        running = true;
-    }
-}
-
-void Machine::eStop() {
-    eStopped = true;
-    running = false;
-    for (Station* station : stations) {
-        station->eStop();
-    }
-    for(Station* station : continuousStations){
-        station->eStop();
-    }
-}
-
-void Machine::onWorkCompleteCallback(Station* station) {
-    Station* nextStation = getNextStation(station);
-    if (nextStation) {
-        if(!nextStation->free()){
-            heldStations.push_back(station);
-        } else {
-                station->deactivate();
-                if(!nextStation->activate(this)){
-                    logError("Error: Station: %s Failed to activate after reporting free", nextStation->name().c_str());
-                };
-                
-        }
-    } else {
-        station->deactivate();
-        logUpdate("Cycle Complete");
-    }
-}
-
-int Machine::addStation(Station* station) {
-    stations.push_back(station);
-    return stations.size() - 1;
-}
-
-void Machine::addStation(Station* station, int index) {
-    stations.insert(stations.begin() + index, station);
-}
-
-int Machine::addContinuousStation(Station* station) {
-    continuousStations.push_back(station);
-    return continuousStations.size() - 1;
-}
-
-void Machine::addContinuousStation(Station* station, int index) {
-    continuousStations.insert(continuousStations.begin() + index, station);
-}
-
-Station* Machine::getNextStation(Station* station) {
-    if (!station) {
-        return nullptr;
-    }
-    auto it = std::find(stations.begin(), stations.end(), station);
-    if (it != stations.end()) {
-        auto next = std::next(it);
-        if (next != stations.end()) {
-            return *next;
-        }
-    }
-    return nullptr;
-}
-
-void Machine::printStatus(){
-    std::vector<Station*> stations = *getStations();
-    std::vector<Station*> contStations = *getContinuousStations();
-    logUpdate("Status Report:");
-    logUpdate("Machine Status:");
-    logInfo("\t%s, Linear Stations: %d, Continuous Stations: %d%s", (isRunning() ? "Running" : "Not Running"), (getStations()->size()), (getContinuousStations()->size()), (isEmergencyStopped() ? ", E-Stopped" : ""));
-    logUpdate("Station Updates:");
-    if(stations.size()){
-        for(auto station : stations){
-            logInfo("\t%s: %s", station->name().c_str(), station->state().c_str());
-        }
-    }
-    if(contStations.size()){
-        for(auto station : contStations){
-            logInfo("\t%s: %s", station->name().c_str(), station->state().c_str());
-        }
-    }
-
-}
-
-const std::vector<Station*>* Machine::getStations() { return &stations; }
-
-const std::vector<Station*>* Machine::getContinuousStations() { return &continuousStations; }
