@@ -12,7 +12,6 @@ namespace rig {
 bool begin();  // True when the base matches Config.h
 Machine& machine();
 
-void pollSerial();               // Dispatches a line to the registered SerialBooleans
 bool readLine(String& line);     // True once a full line is available, trimmed
 
 bool runSwitchOn();

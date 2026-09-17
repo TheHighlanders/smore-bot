@@ -58,27 +58,22 @@ Try these one at a time:
 
 ## 5. Test the wiring
 
-The test program lets you check each part of the robot, one at a time.
+Debug mode lets you check each part of the robot, one at a time, instead of
+running the whole line.
 
-1. Send the test program:
-
-   ```
-   pio run -e p1am_200_bringup -t upload
-   ```
-
-2. Open the serial monitor.
-3. Every 5 seconds it shows a line like this:
+1. Type `debug` and press Enter. The robot stops.
+2. Every 5 seconds it shows a line like this:
 
    ```
-      35s  start:ON  mmExit:off  run:off  oven:72F
+   start:ON  mmExit:off  run:off  oven:72F
    ```
 
    Press the start button. The next line says `start:ON`. Try the same with
    the marshmallow sensor (`mmExit`) and the run switch (`run`).
 
-4. Type `arm` and press Enter. The small light on the controller turns on. Now
+3. Type `arm` and press Enter. The small light on the controller turns on. Now
    stations can move.
-5. **Keep your hands clear. The station moves as soon as you press Enter.**
+4. **Keep your hands clear. The station moves as soon as you press Enter.**
 
    Type a station name and press Enter:
 
@@ -94,8 +89,10 @@ The test program lets you check each part of the robot, one at a time.
    A station finishes its whole move once it starts. `gc2` takes about 24
    seconds.
 
-6. Type `arm` again so nothing else can move.
-7. When you are done, send the normal robot program again (part 2).
+5. Type `arm` again so nothing else can move.
+6. Type `debug` again to leave debug mode and run the robot normally.
+
+The serial monitor also prints which mode the robot is in every 15 seconds.
 
 ## 6. Run the robot
 

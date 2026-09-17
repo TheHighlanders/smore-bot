@@ -93,16 +93,6 @@ bool readLine(String& line) {
     return false;
 }
 
-void pollSerial() {
-    String line;
-    if (!readLine(line)) {
-        return;
-    }
-    if (!SerialBoolean::parseInput(line.c_str(), line.length())) {
-        logLine("Unknown command: %s", line.c_str());
-    }
-}
-
 bool runSwitchOn() { return digitalRead(SWITCH_BUILTIN) == HIGH; }
 
 bool startEdge() {
