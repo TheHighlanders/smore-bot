@@ -29,7 +29,7 @@ static const char* inputState(channelLabel channel) {
 }
 
 static void reportMode() {
-    logLine(debugMode ? "Debug mode" : "Not debug mode");
+    logLine(debugMode ? "Debug mode" : "Smore mode");
 }
 
 // One short line so a 5s cadence stays readable in the monitor.
