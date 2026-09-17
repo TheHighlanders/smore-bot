@@ -11,7 +11,7 @@ Station::Timing LinearDispenser::timingFor(const Config& config) {
     return Timing{config.transitMs, config.extendMs + config.retractMs, config.clearMs};
 }
 
-void LinearDispenser::onActivate() { m_p1.writeDiscrete(1, m_config.capture); }
+void LinearDispenser::onActivate() { setCaptured(true); }
 
 void LinearDispenser::onArrive() { setExtended(true); }
 
@@ -20,11 +20,12 @@ bool LinearDispenser::onWork(uint32_t elapsedMs) {
     return false;
 }
 
-void LinearDispenser::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
+void LinearDispenser::onRelease() { setCaptured(false); }
 
 void LinearDispenser::onReset() {
     m_p1.writeDiscrete(0, m_config.capture);
     m_p1.writeDiscrete(0, m_config.extend);
+    m_captured = false;
     m_extended = false;
 }
 
@@ -37,11 +38,20 @@ void LinearDispenser::setExtended(bool extended) {
     logLine("%s: actuator %s", name().c_str(), extended ? "extending" : "retracting");
 }
 
+void LinearDispenser::setCaptured(bool captured) {
+    if (captured == m_captured) {
+        return;
+    }
+    m_captured = captured;
+    m_p1.writeDiscrete(captured ? 1 : 0, m_config.capture);
+    logLine("%s: tray stop %s", name().c_str(), captured ? "capturing" : "releasing");
+}
+
 void LinearDispenser::selfTest() {
     logLine("%s: tray stop", name().c_str());
-    m_p1.writeDiscrete(1, m_config.capture);
+    setCaptured(true);
     delay(kPulseMs);
-    m_p1.writeDiscrete(0, m_config.capture);
+    setCaptured(false);
 
     logLine("%s: actuator full stroke", name().c_str());
     setExtended(true);

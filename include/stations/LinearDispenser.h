@@ -33,10 +33,12 @@ class LinearDispenser : public Station {
    private:
     static Timing timingFor(const Config& config);
     void setExtended(bool extended);
+    void setCaptured(bool captured);
 
     P1AM& m_p1;
     Config m_config;
     bool m_extended = false;
+    bool m_captured = false;
 };
 
 #endif
