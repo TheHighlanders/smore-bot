@@ -11,7 +11,7 @@ Station::Timing MotorDispenser::timingFor(const Config& config) {
     return Timing{config.transitMs, config.timeoutMs, config.clearMs};
 }
 
-void MotorDispenser::onActivate() { m_p1.writeDiscrete(1, m_config.capture); }
+void MotorDispenser::onActivate() { m_p1.writeDiscrete(0, m_config.capture); }
 
 void MotorDispenser::onArrive() {
     m_seenBlocked = false;
@@ -50,7 +50,7 @@ void MotorDispenser::onComplete() {
     }
 }
 
-void MotorDispenser::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
+void MotorDispenser::onRelease() { m_p1.writeDiscrete(1, m_config.capture); }
 
 void MotorDispenser::onReset() {
     m_p1.writeDiscrete(0, m_config.capture);

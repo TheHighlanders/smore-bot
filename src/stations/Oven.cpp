@@ -17,16 +17,30 @@ void Oven::poll() {
     }
 }
 
-void Oven::onActivate() { setHeating(true); }
+void Oven::onActivate() {
+    setHeating(true);
+    setHeld(true);
+}
 
-void Oven::onRelease() { setHeating(false); }
+void Oven::onRelease() {
+    setHeating(false);
+    setHeld(false);
+}
 
-void Oven::onReset() { setHeating(false); }
+void Oven::onReset() {
+    setHeating(false);
+    setHeld(true);
+}
 
 void Oven::setHeating(bool on) {
     if (m_config.enabled) {
         m_p1.writeDiscrete(on, m_config.heater);
-        m_p1.writeDiscrete(on, m_config.hold);
+    }
+}
+
+void Oven::setHeld(bool held) {
+    if (m_config.enabled) {
+        m_p1.writeDiscrete(held ? 0 : 1, m_config.hold);  // Energized releases; rests captured
     }
 }
 
