@@ -11,6 +11,7 @@
 
 static const uint32_t kModeReportMs = 15000;
 static const uint32_t kInputReportMs = 5000;
+static const uint32_t kStartDelayMs = 1000;
 
 static SerialBoolean statusCommand("status", EPHEMERAL);
 static SerialBoolean startCommand("start", EPHEMERAL);
@@ -20,6 +21,8 @@ static bool debugMode = false;
 static bool armed = false;
 static uint32_t lastModeReport = 0;
 static uint32_t lastInputReport = 0;
+static bool startPending = false;
+static uint32_t startRequestedAt = 0;
 
 static const char* inputState(channelLabel channel) {
     return P1.readDiscrete(channel) ? "ON" : "off";
@@ -113,8 +116,18 @@ void loop() {
 
     // A press starts a cycle when the entry station is free, so a held button
     // yields one tray per cycle.
-    if ((startCommand.read() || rig::startEdge()) && !machine.startCycle()) {
-        logLine("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine stopped");
+    if (startCommand.read() || rig::startEdge()) {
+        startPending = true;
+        startRequestedAt = millis();
+    }
+
+    // Waits kStartDelayMs after the press so the operator has a moment clear
+    // of the line before the sequence begins.
+    if (startPending && millis() - startRequestedAt >= kStartDelayMs) {
+        startPending = false;
+        if (!machine.startCycle()) {
+            logLine("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine stopped");
+        }
     }
 
     machine.update();

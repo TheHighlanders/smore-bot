@@ -74,25 +74,25 @@ const channelLabel kStartButton = {kSlotDiscreteIn, 11};
 // CALIBRATE all of these against the real belt before running product.
 
 const LinearDispenser::Config kGrahamCracker1 = {
-    .capture = {kSlotDiscreteOut, 6},  // Planned channel
+    .capture = {kSlotDiscreteOut, 7},
     .extend = {kSlotDiscreteOut, 15},
-    .extendMs = 5000,
-    .retractMs = 5000,
+    .extendMs = 5500,
+    .retractMs = 5500,
     .transitMs = 0,  // Entry station
     .clearMs = 2000,
 };
 
 const LinearDispenser::Config kChocolate = {
-    .capture = {kSlotDiscreteOut, 7},  // Planned channel
+    .capture = {kSlotDiscreteOut, 6},
     .extend = {kSlotDiscreteOut, 14},
-    .extendMs = 5000,
-    .retractMs = 5000,
+    .extendMs = 4700,
+    .retractMs = 4700,
     .transitMs = 5000,
     .clearMs = 2000,
 };
 
 const MotorDispenser::Config kMarshmallow = {
-    .capture = {kSlotDiscreteOut, 3},
+    .capture = {kSlotDiscreteOut, 5},
     .motor = {kSlotRelay, 8},
     .exitSensor = {kSlotDiscreteIn, 9},
     .timeoutMs = 5000,  // CALIBRATE: maximum motor run
@@ -113,7 +113,7 @@ const GcPusher::Move kGrahamCracker2Moves[] = {
 };
 
 const GcPusher::Config kGrahamCracker2 = {
-    .capture = {kSlotDiscreteOut, 5},
+    .capture = {kSlotDiscreteOut, 3},
     .lifter = {kSlotDiscreteOut, 2},
     .claw = {kSlotDiscreteOut, 1},
     .pusher = {kSlotDiscreteOut, 13},
@@ -130,7 +130,7 @@ const bool kOvenEnabled = true;
 const Oven::Config kOven = {
     .enabled = kOvenEnabled,
     .heater = {kSlotRelay, 1},
-    .hold = {kSlotDiscreteOut, 8},       // TBD, unconfirmed
+    .hold = {kSlotDiscreteOut, 4},
     .thermistor = {kSlotThermistor, 1},  // Shown in status
     .cookMs = 3000,
     .transitMs = 5000,

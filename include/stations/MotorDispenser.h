@@ -23,6 +23,7 @@ class MotorDispenser : public Station {
     void selfTest() override;
 
    protected:
+    void poll() override;
     void onActivate() override;
     void onArrive() override;
     bool onWork(uint32_t elapsedMs) override;
@@ -35,6 +36,7 @@ class MotorDispenser : public Station {
 
     static Timing timingFor(const Config& config);
     void setRunning(bool running);
+    void setCaptured(bool captured);
 
     P1AM& m_p1;
     Config m_config;
@@ -42,6 +44,8 @@ class MotorDispenser : public Station {
     bool m_seenBlocked = false;   // The beam has been broken this cycle
     bool m_clearing = false;      // Timing a debounced clear
     uint32_t m_clearSinceMs = 0;  // elapsedMs when the clear started
+    bool m_captured = true;  // Outputs power up de-energized, which now rests captured
+    uint32_t m_releasedAt = 0;
 };
 
 #endif

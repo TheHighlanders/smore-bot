@@ -15,7 +15,7 @@ Station::Timing GcPusher::timingFor(const Config& config) {
     return Timing{config.transitMs, total, config.clearMs};
 }
 
-void GcPusher::onActivate() { m_p1.writeDiscrete(0, m_config.capture); }
+void GcPusher::onActivate() { setCaptured(true); }
 
 void GcPusher::onArrive() {
     m_move = m_config.moveCount;  // Replay the sequence from the start
@@ -35,7 +35,10 @@ bool GcPusher::onWork(uint32_t elapsedMs) {
     return false;
 }
 
-void GcPusher::onRelease() { m_p1.writeDiscrete(1, m_config.capture); }
+void GcPusher::onRelease() {
+    setCaptured(false);
+    m_releasedAt = millis();
+}
 
 void GcPusher::onReset() {
     m_p1.writeDiscrete(0, m_config.capture);
@@ -43,6 +46,24 @@ void GcPusher::onReset() {
     m_p1.writeDiscrete(0, m_config.claw);
     m_p1.writeDiscrete(0, m_config.pusher);
     m_move = m_config.moveCount;
+    m_captured = true;
+}
+
+// Re-captures once the tray has cleared, instead of leaving the stop open
+// until the next tray activates this station.
+void GcPusher::poll() {
+    if (!m_captured && millis() - m_releasedAt >= m_config.clearMs) {
+        setCaptured(true);
+    }
+}
+
+void GcPusher::setCaptured(bool captured) {
+    if (captured == m_captured) {
+        return;
+    }
+    m_captured = captured;
+    m_p1.writeDiscrete(captured ? 0 : 1, m_config.capture);  // Energized releases; rests captured
+    logLine("%s: tray stop %s", name().c_str(), captured ? "capturing" : "releasing");
 }
 
 void GcPusher::applyMove(size_t index) {
