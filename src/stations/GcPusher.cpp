@@ -15,7 +15,7 @@ Station::Timing GcPusher::timingFor(const Config& config) {
     return Timing{config.transitMs, total, config.clearMs};
 }
 
-void GcPusher::onActivate() { m_p1.writeDiscrete(1, m_config.capture); }
+void GcPusher::onActivate() { m_p1.writeDiscrete(0, m_config.capture); }
 
 void GcPusher::onArrive() {
     m_move = m_config.moveCount;  // Replay the sequence from the start
@@ -35,7 +35,7 @@ bool GcPusher::onWork(uint32_t elapsedMs) {
     return false;
 }
 
-void GcPusher::onRelease() { m_p1.writeDiscrete(0, m_config.capture); }
+void GcPusher::onRelease() { m_p1.writeDiscrete(1, m_config.capture); }
 
 void GcPusher::onReset() {
     m_p1.writeDiscrete(0, m_config.capture);

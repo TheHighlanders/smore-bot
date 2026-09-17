@@ -5,14 +5,15 @@
 
 #include "machine/Station.h"
 
-// Holds a tray for cookMs with the heater relay and tray hold solenoid on
-// together for that window. The thermistor reading appears in the status line.
+// Holds a tray for cookMs with the heater relay on. The tray hold solenoid
+// rests captured for that window and energizes to release the tray
+// afterward. The thermistor reading appears in the status line.
 class Oven : public Station {
    public:
     struct Config {
         bool enabled;             // True drives the heater, hold and thermistor
         channelLabel heater;      // Heater relay
-        channelLabel hold;        // Tray hold solenoid
+        channelLabel hold;        // Tray hold solenoid; energize to release, rests captured
         channelLabel thermistor;  // Shown in status
         uint32_t cookMs;          // Time the tray is held in the oven
         uint32_t transitMs;       // Upstream release -> tray arrives here
@@ -34,6 +35,7 @@ class Oven : public Station {
    private:
     static Timing timingFor(const Config& config);
     void setHeating(bool on);
+    void setHeld(bool held);
 
     P1AM& m_p1;
     Config m_config;
