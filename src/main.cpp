@@ -25,6 +25,10 @@ static const char* inputState(channelLabel channel) {
     return P1.readDiscrete(channel) ? "ON" : "off";
 }
 
+static void reportMode() {
+    logLine(debugMode ? "Debug mode" : "Not debug mode");
+}
+
 // One short line so a 5s cadence stays readable in the monitor.
 static void reportInputs() {
     char oven[12] = "disabled";
@@ -46,7 +50,7 @@ static void handleLine(const String& line) {
         } else {
             P1.startWD();
         }
-        logLine("Mode: %s", debugMode ? "debug" : "normal");
+        reportMode();
         lastModeReport = millis();
         return;
     }
@@ -126,7 +130,7 @@ void loop() {
 
     if (millis() - lastModeReport >= kModeReportMs) {
         lastModeReport = millis();
-        logLine("Mode: %s", debugMode ? "debug" : "normal");
+        reportMode();
     }
 
     digitalWrite(LED_BUILTIN, debugMode ? (armed ? HIGH : LOW) : (machine.isRunning() ? HIGH : LOW));

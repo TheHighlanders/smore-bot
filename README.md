@@ -61,7 +61,7 @@ Try these one at a time:
 Debug mode lets you check each part of the robot, one at a time, instead of
 running the whole line.
 
-1. Type `debug` and press Enter. The robot stops.
+1. Type `debug` and press Enter. The robot stops and prints `Debug mode`.
 2. Every 5 seconds it shows a line like this:
 
    ```
@@ -90,9 +90,10 @@ running the whole line.
    seconds.
 
 5. Type `arm` again so nothing else can move.
-6. Type `debug` again to leave debug mode and run the robot normally.
+6. Type `debug` again. It prints `Not debug mode` and runs the robot normally.
 
-The serial monitor also prints which mode the robot is in every 15 seconds.
+Every 15 seconds the serial monitor prints `Debug mode` or `Not debug mode`, so
+you can always tell which one the robot is in.
 
 ## 6. Run the robot
 
