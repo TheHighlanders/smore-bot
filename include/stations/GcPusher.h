@@ -20,7 +20,7 @@ class GcPusher : public Station {
     };
 
     struct Config {
-        channelLabel capture;  // Tray stop
+        channelLabel capture;  // Tray stop; energize to release, rests captured
         channelLabel lifter;   // Energize to lower; rests up
         channelLabel claw;     // Energize to close
         channelLabel pusher;   // Energize to push out

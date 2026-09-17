@@ -11,7 +11,7 @@
 class LinearDispenser : public Station {
    public:
     struct Config {
-        channelLabel capture;  // Tray stop
+        channelLabel capture;  // Tray stop; energize to release, rests captured
         channelLabel extend;   // Energize to drive the actuator out
         uint32_t extendMs;     // Travel out plus any hold
         uint32_t retractMs;    // Travel back
@@ -38,7 +38,7 @@ class LinearDispenser : public Station {
     P1AM& m_p1;
     Config m_config;
     bool m_extended = false;
-    bool m_captured = false;
+    bool m_captured = true;  // Outputs power up de-energized, which now rests captured
 };
 
 #endif

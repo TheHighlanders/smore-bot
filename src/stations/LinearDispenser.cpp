@@ -25,7 +25,7 @@ void LinearDispenser::onRelease() { setCaptured(false); }
 void LinearDispenser::onReset() {
     m_p1.writeDiscrete(0, m_config.capture);
     m_p1.writeDiscrete(0, m_config.extend);
-    m_captured = false;
+    m_captured = true;
     m_extended = false;
 }
 
@@ -43,15 +43,15 @@ void LinearDispenser::setCaptured(bool captured) {
         return;
     }
     m_captured = captured;
-    m_p1.writeDiscrete(captured ? 1 : 0, m_config.capture);
+    m_p1.writeDiscrete(captured ? 0 : 1, m_config.capture);  // Energized releases; rests captured
     logLine("%s: tray stop %s", name().c_str(), captured ? "capturing" : "releasing");
 }
 
 void LinearDispenser::selfTest() {
     logLine("%s: tray stop", name().c_str());
-    setCaptured(true);
-    delay(kPulseMs);
     setCaptured(false);
+    delay(kPulseMs);
+    setCaptured(true);
 
     logLine("%s: actuator full stroke", name().c_str());
     setExtended(true);

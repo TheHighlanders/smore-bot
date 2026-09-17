@@ -10,7 +10,7 @@
 class MotorDispenser : public Station {
    public:
     struct Config {
-        channelLabel capture;     // Tray stop
+        channelLabel capture;     // Tray stop; energize to release, rests captured
         channelLabel motor;       // Energize to run the dispenser motor
         channelLabel exitSensor;  // Light sensor: reads blocked while product is in it
         uint32_t timeoutMs;       // Maximum motor run
