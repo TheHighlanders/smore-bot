@@ -79,7 +79,7 @@ const LinearDispenser::Config kGrahamCracker1 = {
     .extendMs = 5500,
     .retractMs = 5500,
     .transitMs = 0,  // Entry station
-    .clearMs = 2000,
+    .clearMs = 5000,
 };
 
 const LinearDispenser::Config kChocolate = {
@@ -88,7 +88,7 @@ const LinearDispenser::Config kChocolate = {
     .extendMs = 4700,
     .retractMs = 4700,
     .transitMs = 5000,
-    .clearMs = 2000,
+    .clearMs = 5000,
 };
 
 const MotorDispenser::Config kMarshmallow = {
@@ -97,7 +97,7 @@ const MotorDispenser::Config kMarshmallow = {
     .exitSensor = {kSlotDiscreteIn, 9},
     .timeoutMs = 5000,  // CALIBRATE: maximum motor run
     .transitMs = 5000,
-    .clearMs = 2000,
+    .clearMs = 5000,
 };
 
 // One GC2 cycle, in order.
@@ -120,7 +120,7 @@ const GcPusher::Config kGrahamCracker2 = {
     .moves = kGrahamCracker2Moves,
     .moveCount = sizeof(kGrahamCracker2Moves) / sizeof(kGrahamCracker2Moves[0]),
     .transitMs = 5000,
-    .clearMs = 2000,
+    .clearMs = 5000,
 };
 
 // True runs the oven: heater and hold solenoid on for cookMs. False leaves its
