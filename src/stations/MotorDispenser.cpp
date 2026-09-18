@@ -11,7 +11,7 @@ Station::Timing MotorDispenser::timingFor(const Config& config) {
     return Timing{config.transitMs, config.timeoutMs, config.clearMs};
 }
 
-void MotorDispenser::onActivate() { m_p1.writeDiscrete(0, m_config.capture); }
+void MotorDispenser::onActivate() { setCaptured(true); }
 
 void MotorDispenser::onArrive() {
     m_seenBlocked = false;
@@ -50,12 +50,33 @@ void MotorDispenser::onComplete() {
     }
 }
 
-void MotorDispenser::onRelease() { m_p1.writeDiscrete(1, m_config.capture); }
+void MotorDispenser::onRelease() {
+    setCaptured(false);
+    m_releasedAt = millis();
+}
 
 void MotorDispenser::onReset() {
     m_p1.writeDiscrete(0, m_config.capture);
     m_p1.writeDiscrete(0, m_config.motor);
+    m_captured = true;
     m_running = false;
+}
+
+// Re-captures once the tray has cleared, instead of leaving the stop open
+// until the next tray activates this station.
+void MotorDispenser::poll() {
+    if (!m_captured && millis() - m_releasedAt >= m_config.clearMs) {
+        setCaptured(true);
+    }
+}
+
+void MotorDispenser::setCaptured(bool captured) {
+    if (captured == m_captured) {
+        return;
+    }
+    m_captured = captured;
+    m_p1.writeDiscrete(captured ? 0 : 1, m_config.capture);  // Energized releases; rests captured
+    logLine("%s: tray stop %s", name().c_str(), captured ? "capturing" : "releasing");
 }
 
 void MotorDispenser::setRunning(bool running) {

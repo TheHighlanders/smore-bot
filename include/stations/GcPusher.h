@@ -35,6 +35,7 @@ class GcPusher : public Station {
     void selfTest() override;
 
    protected:
+    void poll() override;
     void onActivate() override;
     void onArrive() override;
     bool onWork(uint32_t elapsedMs) override;
@@ -44,10 +45,13 @@ class GcPusher : public Station {
    private:
     static Timing timingFor(const Config& config);
     void applyMove(size_t index);
+    void setCaptured(bool captured);
 
     P1AM& m_p1;
     Config m_config;
     size_t m_move;  // Index of the applied move; moveCount before the first
+    bool m_captured = true;  // Outputs power up de-energized, which now rests captured
+    uint32_t m_releasedAt = 0;
 };
 
 #endif
