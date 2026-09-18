@@ -132,7 +132,7 @@ const Oven::Config kOven = {
     .heater = {kSlotRelay, 1},
     .hold = {kSlotDiscreteOut, 4},
     .thermistor = {kSlotThermistor, 1},  // Shown in status
-    .cookMs = 3000,
+    .cookMs = 20 * 1000,
     .transitMs = 5000,
     .clearMs = 5000,
 };

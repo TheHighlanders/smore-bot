@@ -22,6 +22,18 @@ void Oven::onActivate() {
     setHeld(true);
 }
 
+void Oven::onArrive() { m_working = true; }
+
+bool Oven::onWork(uint32_t /*elapsedMs*/) {
+    if (m_cancelRequested) {
+        m_cancelRequested = false;
+        return true;
+    }
+    return false;
+}
+
+void Oven::onComplete() { m_working = false; }
+
 void Oven::onRelease() {
     setHeating(false);
     setHeld(false);
@@ -30,6 +42,16 @@ void Oven::onRelease() {
 void Oven::onReset() {
     setHeating(false);
     setHeld(true);
+    m_working = false;
+    m_cancelRequested = false;
+}
+
+bool Oven::cancelCook() {
+    if (!m_working) {
+        return false;
+    }
+    m_cancelRequested = true;
+    return true;
 }
 
 void Oven::setHeating(bool on) {

@@ -24,9 +24,16 @@ class Oven : public Station {
 
     void selfTest() override;
 
+    // Cuts a cook short so the tray moves on immediately, as if cookMs had
+    // elapsed. True if a cook was in progress; false (ignored) otherwise.
+    bool cancelCook();
+
    protected:
     void poll() override;
     void onActivate() override;
+    void onArrive() override;
+    bool onWork(uint32_t elapsedMs) override;
+    void onComplete() override;
     void onRelease() override;
     void onReset() override;
 
@@ -40,6 +47,8 @@ class Oven : public Station {
     P1AM& m_p1;
     Config m_config;
     float m_temperature = 0;
+    bool m_working = false;  // In the Working phase of a real cook cycle
+    bool m_cancelRequested = false;
 };
 
 #endif

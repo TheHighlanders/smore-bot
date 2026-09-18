@@ -17,6 +17,7 @@ namespace rig {
 namespace {
 
 Machine g_machine;
+Oven* g_oven = nullptr;
 bool g_startWasPressed = false;
 
 bool verifyModules() {
@@ -42,6 +43,7 @@ bool verifyModules() {
 }  // namespace
 
 Machine& machine() { return g_machine; }
+Oven& oven() { return *g_oven; }
 
 bool begin() {
     Serial.begin(115200);
@@ -68,6 +70,7 @@ bool begin() {
     static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2);
     static Belt belt("BELT", P1, config::kConveyorMotor);
 
+    g_oven = &oven;
     g_machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
                         {&belt});
     return true;

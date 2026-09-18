@@ -15,10 +15,10 @@ static const uint32_t kStartDelayMs = 1000;
 
 static SerialBoolean statusCommand("status", EPHEMERAL);
 static SerialBoolean startCommand("start", EPHEMERAL);
+static SerialBoolean cancelCommand("cancel", EPHEMERAL);
 
 static bool ready = false;
 static bool debugMode = false;
-static bool armed = false;
 static uint32_t lastModeReport = 0;
 static uint32_t lastInputReport = 0;
 static bool startPending = false;
@@ -45,7 +45,6 @@ static void reportInputs() {
 static void handleLine(const String& line) {
     if (line == "debug") {
         debugMode = !debugMode;
-        armed = false;
         // selfTest holds actuators with delay() past the watchdog window, so
         // debug mode stops the watchdog the same as the old bring-up build did.
         if (debugMode) {
@@ -63,15 +62,8 @@ static void handleLine(const String& line) {
         }
         return;
     }
-    if (line == "arm") {
-        armed = !armed;
-        logLine("Actuators %s", armed ? "ARMED" : "disabled, read only");
-        return;
-    }
-    if (!armed) {
-        logLine("Read only. Type 'arm' to arm, then a station name.");
-        return;
-    }
+    // Typing 'debug' is already an explicit opt-in, so a station name runs
+    // its selfTest right away.
     if (!rig::machine().selfTestNamed(line.c_str())) {
         logLine("Unknown station: %s", line.c_str());
     }
@@ -136,6 +128,14 @@ void loop() {
         machine.printStatus();
     }
 
+    if (cancelCommand.read()) {
+        if (rig::oven().cancelCook()) {
+            logLine("Oven: cook canceled");
+        } else {
+            logLine("Cancel ignored: oven not cooking");
+        }
+    }
+
     if (debugMode && millis() - lastInputReport >= kInputReportMs) {
         lastInputReport = millis();
         reportInputs();
@@ -146,5 +146,5 @@ void loop() {
         reportMode();
     }
 
-    digitalWrite(LED_BUILTIN, debugMode ? (armed ? HIGH : LOW) : (machine.isRunning() ? HIGH : LOW));
+    digitalWrite(LED_BUILTIN, (debugMode || machine.isRunning()) ? HIGH : LOW);
 }
