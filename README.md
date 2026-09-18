@@ -104,7 +104,8 @@ you can always tell which one the robot is in.
 4. Take everything off the belt before you turn it back on.
 5. Type `status` in the serial monitor to see what each station is doing.
 6. Type `cancel` to stop the oven early and let the tray move on. This only
-   does anything while the oven is actually toasting.
+   does anything while the oven is actually toasting. A cancel button does
+   the same thing once one is wired in (see `include/Config.h`).
 
 **To stop in an emergency, press the e-stop button.**
 

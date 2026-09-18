@@ -19,6 +19,7 @@ namespace {
 Machine g_machine;
 Oven* g_oven = nullptr;
 bool g_startWasPressed = false;
+bool g_cancelWasPressed = false;
 
 bool verifyModules() {
     bool ok = true;
@@ -102,6 +103,13 @@ bool startEdge() {
     bool pressed = P1.readDiscrete(config::kStartButton);
     bool edge = pressed && !g_startWasPressed;
     g_startWasPressed = pressed;
+    return edge;
+}
+
+bool cancelEdge() {
+    bool pressed = P1.readDiscrete(config::kCancelButton);
+    bool edge = pressed && !g_cancelWasPressed;
+    g_cancelWasPressed = pressed;
     return edge;
 }
 

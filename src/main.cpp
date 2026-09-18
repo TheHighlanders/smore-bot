@@ -128,7 +128,7 @@ void loop() {
         machine.printStatus();
     }
 
-    if (cancelCommand.read()) {
+    if (cancelCommand.read() || rig::cancelEdge()) {
         if (rig::oven().cancelCook()) {
             logLine("Oven: cook canceled");
         } else {
