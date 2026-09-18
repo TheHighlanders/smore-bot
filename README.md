@@ -98,8 +98,8 @@ you can always tell which one the robot is in.
 
 1. Flip the run switch on. It is the small switch on the controller. The belt
    starts.
-2. Press the start button to make a smore. It waits 1 second before moving, so
-   step back after you press it.
+2. Wait for the ready light. Press the start button to make a smore. The light
+   goes out and the robot waits 1 second before moving, so step back.
 3. Flip the run switch off to stop.
 4. Take everything off the belt before you turn it back on.
 5. Type `status` in the serial monitor to see what each station is doing.

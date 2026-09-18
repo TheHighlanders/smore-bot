@@ -14,6 +14,7 @@ class Machine {
     void configure(std::vector<Station*> line, std::vector<Station*> continuous);
 
     void update();
+    bool canStart() const;  // True when startCycle() would be accepted
     bool startCycle();
 
     // On: start the continuous stations and accept cycles. Off: reset every

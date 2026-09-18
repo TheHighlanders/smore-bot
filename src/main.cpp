@@ -148,4 +148,7 @@ void loop() {
     }
 
     digitalWrite(LED_BUILTIN, (debugMode || machine.isRunning()) ? HIGH : LOW);
+
+    // Lit while ready for a start. Dark as soon as start is pressed.
+    P1.writeDiscrete(machine.canStart() && !startPending, config::kReadyLight);
 }
