@@ -65,7 +65,7 @@ running the whole line.
 2. Every 5 seconds it shows a line like this:
 
    ```
-   start:ON  mmExit:off  run:off  oven:72F
+   start:ON  cancelCook:off  mmExit:off  run:off  oven:72F
    ```
 
    Press the start button. The next line says `start:ON`. Try the same with
@@ -103,9 +103,9 @@ you can always tell which one the robot is in.
 3. Flip the run switch off to stop.
 4. Take everything off the belt before you turn it back on.
 5. Type `status` in the serial monitor to see what each station is doing.
-6. Type `cancel` to stop the oven early and let the tray move on. This only
-   does anything while the oven is actually toasting. A cancel button does
-   the same thing once one is wired in (see `include/Config.h`).
+6. Type `cancel cook` to stop the oven early and let the tray move on. This
+   only does anything while the oven is actually toasting. A cancel cook
+   button does the same thing once one is wired in (see `include/Config.h`).
 
 **To stop in an emergency, press the e-stop button.**
 

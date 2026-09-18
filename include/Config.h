@@ -43,12 +43,12 @@ const size_t kModuleCount = sizeof(kModules) / sizeof(kModules[0]);
 const char kThermistorSetup[] = {0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00};
 
 const channelLabel kStartButton = {kSlotDiscreteIn, 11};
-const channelLabel kCancelButton = {kSlotDiscreteIn, 10};  // Unwired until installed
+const channelLabel kCancelCookButton = {kSlotDiscreteIn, 12};  // Unwired until installed
 
 // Discrete in (kSlotDiscreteIn, P1-16ND3) channel map:
 //   9   MM exit sensor
-//   10  cancel button
 //   11  start button
+//   12  cancel cook button
 
 // Discrete out (kSlotDiscreteOut, P1-15TD2) channel map:
 //   1     GC2 claw

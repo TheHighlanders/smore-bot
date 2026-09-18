@@ -17,8 +17,8 @@ Oven& oven();  // Valid once begin() returns true
 bool readLine(String& line);     // True once a full line is available, trimmed
 
 bool runSwitchOn();
-bool startEdge();   // True once per press
-bool cancelEdge();  // True once per press
+bool startEdge();       // True once per press
+bool cancelCookEdge();  // True once per press
 
 }  // namespace rig
 

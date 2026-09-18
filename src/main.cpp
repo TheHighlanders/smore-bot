@@ -15,7 +15,7 @@ static const uint32_t kStartDelayMs = 1000;
 
 static SerialBoolean statusCommand("status", EPHEMERAL);
 static SerialBoolean startCommand("start", EPHEMERAL);
-static SerialBoolean cancelCommand("cancel", EPHEMERAL);
+static SerialBoolean cancelCookCommand("cancel cook", EPHEMERAL);
 
 static bool ready = false;
 static bool debugMode = false;
@@ -38,8 +38,9 @@ static void reportInputs() {
     if (config::kOvenEnabled) {
         snprintf(oven, sizeof(oven), "%dF", (int)P1.readTemperature(config::kOven.thermistor));
     }
-    logLine("start:%s  mmExit:%s  run:%s  oven:%s", inputState(config::kStartButton),
-            inputState(config::kMarshmallow.exitSensor), rig::runSwitchOn() ? "ON" : "off", oven);
+    logLine("start:%s  cancelCook:%s  mmExit:%s  run:%s  oven:%s", inputState(config::kStartButton),
+            inputState(config::kCancelCookButton), inputState(config::kMarshmallow.exitSensor),
+            rig::runSwitchOn() ? "ON" : "off", oven);
 }
 
 static void handleLine(const String& line) {
@@ -128,11 +129,11 @@ void loop() {
         machine.printStatus();
     }
 
-    if (cancelCommand.read() || rig::cancelEdge()) {
+    if (cancelCookCommand.read() || rig::cancelCookEdge()) {
         if (rig::oven().cancelCook()) {
             logLine("Oven: cook canceled");
         } else {
-            logLine("Cancel ignored: oven not cooking");
+            logLine("Cancel cook ignored: oven not cooking");
         }
     }
 
