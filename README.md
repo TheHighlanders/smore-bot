@@ -65,15 +65,13 @@ running the whole line.
 2. Every 5 seconds it shows a line like this:
 
    ```
-   start:ON  mmExit:off  run:off  oven:72F
+   start:ON  cancelCook:off  mmExit:off  run:off  oven:72F
    ```
 
    Press the start button. The next line says `start:ON`. Try the same with
    the marshmallow sensor (`mmExit`) and the run switch (`run`).
 
-3. Type `arm` and press Enter. The small light on the controller turns on. Now
-   stations can move.
-4. **Keep your hands clear. The station moves as soon as you press Enter.**
+3. **Keep your hands clear. The station moves as soon as you press Enter.**
 
    Type a station name and press Enter:
 
@@ -89,10 +87,9 @@ running the whole line.
    A station finishes its whole move once it starts. `gc2` takes about 24
    seconds.
 
-5. Type `arm` again so nothing else can move.
-6. Type `debug` again. It prints `Not debug mode` and runs the robot normally.
+4. Type `debug` again. It prints `Smore mode` and runs the robot normally.
 
-Every 15 seconds the serial monitor prints `Debug mode` or `Not debug mode`, so
+Every 15 seconds the serial monitor prints `Debug mode` or `Smore mode`, so
 you can always tell which one the robot is in.
 
 ## 6. Run the robot
@@ -106,6 +103,9 @@ you can always tell which one the robot is in.
 3. Flip the run switch off to stop.
 4. Take everything off the belt before you turn it back on.
 5. Type `status` in the serial monitor to see what each station is doing.
+6. Type `cancel cook` to stop the oven early and let the tray move on. This
+   only does anything while the oven is actually toasting. A cancel cook
+   button does the same thing once one is wired in (see `include/Config.h`).
 
 **To stop in an emergency, press the e-stop button.**
 

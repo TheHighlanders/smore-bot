@@ -15,10 +15,10 @@ static const uint32_t kStartDelayMs = 1000;
 
 static SerialBoolean statusCommand("status", EPHEMERAL);
 static SerialBoolean startCommand("start", EPHEMERAL);
+static SerialBoolean cancelCookCommand("cancel cook", EPHEMERAL);
 
 static bool ready = false;
 static bool debugMode = false;
-static bool armed = false;
 static uint32_t lastModeReport = 0;
 static uint32_t lastInputReport = 0;
 static bool startPending = false;
@@ -38,14 +38,14 @@ static void reportInputs() {
     if (config::kOvenEnabled) {
         snprintf(oven, sizeof(oven), "%dF", (int)P1.readTemperature(config::kOven.thermistor));
     }
-    logLine("start:%s  mmExit:%s  run:%s  oven:%s", inputState(config::kStartButton),
-            inputState(config::kMarshmallow.exitSensor), rig::runSwitchOn() ? "ON" : "off", oven);
+    logLine("start:%s  cancelCook:%s  mmExit:%s  run:%s  oven:%s", inputState(config::kStartButton),
+            inputState(config::kCancelCookButton), inputState(config::kMarshmallow.exitSensor),
+            rig::runSwitchOn() ? "ON" : "off", oven);
 }
 
 static void handleLine(const String& line) {
     if (line == "debug") {
         debugMode = !debugMode;
-        armed = false;
         // selfTest holds actuators with delay() past the watchdog window, so
         // debug mode stops the watchdog the same as the old bring-up build did.
         if (debugMode) {
@@ -63,15 +63,8 @@ static void handleLine(const String& line) {
         }
         return;
     }
-    if (line == "arm") {
-        armed = !armed;
-        logLine("Actuators %s", armed ? "ARMED" : "disabled, read only");
-        return;
-    }
-    if (!armed) {
-        logLine("Read only. Type 'arm' to arm, then a station name.");
-        return;
-    }
+    // Typing 'debug' is already an explicit opt-in, so a station name runs
+    // its selfTest right away.
     if (!rig::machine().selfTestNamed(line.c_str())) {
         logLine("Unknown station: %s", line.c_str());
     }
@@ -136,6 +129,14 @@ void loop() {
         machine.printStatus();
     }
 
+    if (cancelCookCommand.read() || rig::cancelCookEdge()) {
+        if (rig::oven().cancelCook()) {
+            logLine("Oven: cook canceled");
+        } else {
+            logLine("Cancel cook ignored: oven not cooking");
+        }
+    }
+
     if (debugMode && millis() - lastInputReport >= kInputReportMs) {
         lastInputReport = millis();
         reportInputs();
@@ -146,5 +147,5 @@ void loop() {
         reportMode();
     }
 
-    digitalWrite(LED_BUILTIN, debugMode ? (armed ? HIGH : LOW) : (machine.isRunning() ? HIGH : LOW));
+    digitalWrite(LED_BUILTIN, (debugMode || machine.isRunning()) ? HIGH : LOW);
 }

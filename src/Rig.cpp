@@ -17,7 +17,9 @@ namespace rig {
 namespace {
 
 Machine g_machine;
+Oven* g_oven = nullptr;
 bool g_startWasPressed = false;
+bool g_cancelCookWasPressed = false;
 
 bool verifyModules() {
     bool ok = true;
@@ -42,6 +44,7 @@ bool verifyModules() {
 }  // namespace
 
 Machine& machine() { return g_machine; }
+Oven& oven() { return *g_oven; }
 
 bool begin() {
     Serial.begin(115200);
@@ -68,6 +71,7 @@ bool begin() {
     static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2);
     static Belt belt("BELT", P1, config::kConveyorMotor);
 
+    g_oven = &oven;
     g_machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
                         {&belt});
     return true;
@@ -99,6 +103,13 @@ bool startEdge() {
     bool pressed = P1.readDiscrete(config::kStartButton);
     bool edge = pressed && !g_startWasPressed;
     g_startWasPressed = pressed;
+    return edge;
+}
+
+bool cancelCookEdge() {
+    bool pressed = P1.readDiscrete(config::kCancelCookButton);
+    bool edge = pressed && !g_cancelCookWasPressed;
+    g_cancelCookWasPressed = pressed;
     return edge;
 }
 
