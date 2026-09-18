@@ -124,6 +124,7 @@ void loop() {
     }
 
     machine.update();
+    rig::leds().update(millis());
 
     if (statusCommand.read()) {
         machine.printStatus();
