@@ -3,6 +3,7 @@
 
 #include <P1AM.h>
 
+#include "leds/StatusLeds.h"
 #include "machine/Station.h"
 #include "stations/GcPusher.h"
 #include "stations/LinearDispenser.h"
@@ -144,6 +145,45 @@ const Oven::Config kOven = {
 };
 
 const channelLabel kConveyorMotor = {kSlotDiscreteOut, 12};
+
+// Status LEDs: one strip along the belt, counted from the start of the belt.
+// Each station lights its own range. The belt spans the whole strip and is drawn
+// first, so the stations cover it and it shows on the LEDs left over.
+//
+// CALIBRATE the count and ranges against the real strip.
+const uint16_t kLedCount = 60;
+
+const StatusLeds::Range kBeltLeds = {0, kLedCount};  // First LED, LED count
+const StatusLeds::Range kGrahamCracker1Leds = {0, 10};
+const StatusLeds::Range kChocolateLeds = {10, 10};
+const StatusLeds::Range kMarshmallowLeds = {20, 10};
+const StatusLeds::Range kOvenLeds = {30, 10};
+const StatusLeds::Range kGrahamCracker2Leds = {40, 10};
+
+const Rgb kBlue = {0, 0, 255};
+const Rgb kGreen = {0, 255, 0};
+const Rgb kRed = {255, 0, 0};
+
+// Every station shows:
+//
+//   idle      solid blue
+//   arriving  green band, waiting for the tray
+//   working   pulsing (see kPulse)
+//   done      solid, in the pulse color
+//   clearing  blue band, tray leaving
+//
+// A band moves from the station's first LED to its last.
+const StatusLeds::Config kStatusLeds = {
+    .idle = kBlue,
+    .arriving = kGreen,
+    .clearing = kBlue,
+    .bandWidth = 3,
+    .bandStepMs = 100,
+};
+
+// Working look: color, milliseconds per pulse.
+const StatusLeds::Pulse kPulse = {kGreen, 2000};
+const StatusLeds::Pulse kOvenPulse = {kRed, 800};
 
 // Watchdog window. HOLD de-energizes every module output and halts the CPU
 // until a power cycle, so a hung sketch turns the heater off.

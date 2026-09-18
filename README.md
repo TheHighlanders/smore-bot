@@ -109,11 +109,29 @@ you can always tell which one the robot is in.
 
 **To stop in an emergency, press the e-stop button.**
 
-## 7. Change timings
+## 7. Read the status lights
+
+Once the light strip is wired in, the lights along the belt show what each
+station is doing:
+
+| Lights | Meaning |
+| --- | --- |
+| Blue | Waiting for its turn |
+| Green band moving | Waiting for the tray to arrive |
+| Pulsing green | Working |
+| Solid green | Finished, tray still there |
+| Blue band moving | The tray is leaving |
+
+The oven uses red where the others use green, and pulses faster. The belt
+lights are blue when the belt is stopped and pulse green while it runs.
+
+The colors, speeds and light counts are in `include/Config.h`.
+
+## 8. Change timings
 
 Times are in `include/Config.h`. `1000` means 1 second.
 
-## 8. Run the tests
+## 9. Run the tests
 
 This checks the robot's logic on your computer. The robot does not need to be
 plugged in.
