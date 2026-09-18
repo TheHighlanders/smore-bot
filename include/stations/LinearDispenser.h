@@ -24,6 +24,7 @@ class LinearDispenser : public Station {
     void selfTest() override;
 
    protected:
+    void poll() override;
     void onActivate() override;
     void onArrive() override;
     bool onWork(uint32_t elapsedMs) override;
@@ -39,6 +40,7 @@ class LinearDispenser : public Station {
     Config m_config;
     bool m_extended = false;
     bool m_captured = true;  // Outputs power up de-energized, which now rests captured
+    uint32_t m_releasedAt = 0;
 };
 
 #endif

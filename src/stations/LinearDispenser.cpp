@@ -20,7 +20,18 @@ bool LinearDispenser::onWork(uint32_t elapsedMs) {
     return false;
 }
 
-void LinearDispenser::onRelease() { setCaptured(false); }
+void LinearDispenser::onRelease() {
+    setCaptured(false);
+    m_releasedAt = millis();
+}
+
+// Re-captures once the tray has cleared, instead of leaving the stop open
+// until the next tray activates this station.
+void LinearDispenser::poll() {
+    if (!m_captured && millis() - m_releasedAt >= m_config.clearMs) {
+        setCaptured(true);
+    }
+}
 
 void LinearDispenser::onReset() {
     m_p1.writeDiscrete(0, m_config.capture);
