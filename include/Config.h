@@ -35,7 +35,7 @@ const ModuleSlot kModules[] = {
     {"P1-16ND3", kSlotDiscreteIn},   // Start button, MM exit sensor
     {"P1-04AD-2", kSlotAnalogIn},    // Spare
     {"P1-15TD2", kSlotDiscreteOut},  // Pneumatic gates, conveyor, linear actuators
-    {"P1-08TRS", kSlotRelay},        // Oven heater, MM motor
+    {"P1-08TRS", kSlotRelay},        // Oven heater, ready light, MM motor
 };
 const size_t kModuleCount = sizeof(kModules) / sizeof(kModules[0]);
 
@@ -44,6 +44,7 @@ const char kThermistorSetup[] = {0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00}
 
 const channelLabel kStartButton = {kSlotDiscreteIn, 11};
 const channelLabel kCancelCookButton = {kSlotDiscreteIn, 12};  // Unwired until installed
+const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready for a start
 
 // Discrete in (kSlotDiscreteIn, P1-16ND3) channel map:
 //   9   MM exit sensor
@@ -66,7 +67,7 @@ const channelLabel kCancelCookButton = {kSlotDiscreteIn, 12};  // Unwired until 
 //
 // Relay (kSlotRelay, P1-08TRS) channel map:
 //   1  oven heater
-//   2  spare (bench lightbulb)
+//   2  ready light
 //   8  MM dispense motor
 
 // Station times, in milliseconds:

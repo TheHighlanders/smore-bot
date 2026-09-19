@@ -79,6 +79,26 @@ void start_is_ignored_while_entry_station_is_busy() {
     TEST_ASSERT_EQUAL_INT(1, line.gc1.activations);
 }
 
+void can_start_follows_the_entry_station() {
+    Line line;
+    TEST_ASSERT_FALSE_MESSAGE(line.machine.canStart(), "ready while stopped");
+
+    line.machine.run(true);
+    TEST_ASSERT_TRUE_MESSAGE(line.machine.canStart(), "blocked with the line empty");
+
+    line.machine.startCycle();
+    TEST_ASSERT_FALSE_MESSAGE(line.machine.canStart(), "ready while the entry station is busy");
+
+    // GC1 finishes work at 1500 ms and releases, then clears for 2000 ms.
+    line.run(1600);
+    TEST_ASSERT_FALSE_MESSAGE(line.machine.canStart(), "ready while the entry station clears");
+    line.run(2000);
+    TEST_ASSERT_TRUE_MESSAGE(line.machine.canStart(), "blocked after clear time");
+
+    line.machine.run(false);
+    TEST_ASSERT_FALSE_MESSAGE(line.machine.canStart(), "ready after stopping");
+}
+
 void stopping_resets_every_station() {
     Line line;
     line.machine.run(true);
@@ -264,6 +284,7 @@ int main() {
     RUN_TEST(one_tray_visits_every_station_in_order);
     RUN_TEST(five_trays_never_collide);
     RUN_TEST(start_is_ignored_while_entry_station_is_busy);
+    RUN_TEST(can_start_follows_the_entry_station);
     RUN_TEST(stopping_resets_every_station);
     RUN_TEST(clear_time_gates_the_next_tray);
     RUN_TEST(belt_restarts_across_repeated_holds);

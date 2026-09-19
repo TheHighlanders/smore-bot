@@ -41,11 +41,12 @@ void Machine::update() {
     }
 }
 
+bool Machine::canStart() const {
+    return m_running && !m_line.empty() && m_line.front()->free();
+}
+
 bool Machine::startCycle() {
-    if (!m_running || m_line.empty()) {
-        return false;
-    }
-    return m_line.front()->activate(millis());
+    return canStart() && m_line.front()->activate(millis());
 }
 
 void Machine::run(bool enable) {
