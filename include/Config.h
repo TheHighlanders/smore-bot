@@ -83,10 +83,10 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 7},
     .extend = {kSlotDiscreteOut, 15},
-    .extendMs = 5500,
-    .retractMs = 5500,
+    .extendMs = 7500,
+    .retractMs = 7500,
     .transitMs = 0,  // Entry station
-    .clearMs = 5000,
+    .clearMs = 7000,
 };
 
 const LinearDispenser::Config kChocolate = {
@@ -95,16 +95,16 @@ const LinearDispenser::Config kChocolate = {
     .extendMs = 4700,
     .retractMs = 4700,
     .transitMs = 5000,
-    .clearMs = 5000,
+    .clearMs = 7000,
 };
 
 const MotorDispenser::Config kMarshmallow = {
     .capture = {kSlotDiscreteOut, 5},
     .motor = {kSlotRelay, 8},
     .exitSensor = {kSlotDiscreteIn, 9},
-    .timeoutMs = 5000,  // CALIBRATE: maximum motor run
+    .timeoutMs = 3500,
     .transitMs = 5000,
-    .clearMs = 5000,
+    .clearMs = 7000,
 };
 
 // One GC2 cycle, in order.
@@ -126,7 +126,7 @@ const GcPusher::Config kGrahamCracker2 = {
     .pusher = {kSlotDiscreteOut, 13},
     .moves = kGrahamCracker2Moves,
     .moveCount = sizeof(kGrahamCracker2Moves) / sizeof(kGrahamCracker2Moves[0]),
-    .transitMs = 5000,
+    .transitMs = 7000,
     .clearMs = 5000,
 };
 
@@ -139,8 +139,8 @@ const Oven::Config kOven = {
     .heater = {kSlotRelay, 1},
     .hold = {kSlotDiscreteOut, 4},
     .thermistor = {kSlotThermistor, 1},  // Shown in status
-    .cookMs = 20 * 1000,
-    .transitMs = 5000,
+    .cookMs = 22 * 1000,
+    .transitMs = 7000,
     .clearMs = 5000,
 };
 
