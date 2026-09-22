@@ -4,8 +4,8 @@
 
 #include "Log.h"
 
-Oven::Oven(std::string name, P1AM& p1, Config config)
-    : Station(name, timingFor(config)), m_p1(p1), m_config(config) {}
+Oven::Oven(std::string name, P1AM& p1, Config config, ReadyCheck readyCheck)
+    : Station(name, timingFor(config)), m_p1(p1), m_config(config), m_readyCheck(readyCheck) {}
 
 Station::Timing Oven::timingFor(const Config& config) {
     return Timing{config.transitMs, config.cookMs, config.clearMs};
@@ -17,6 +17,8 @@ void Oven::poll() {
         m_temperature = m_p1.readTemperature(m_config.thermistor);
     }
 }
+
+bool Oven::ready() const { return m_readyCheck(millis()); }
 
 void Oven::onActivate() {
     setHeating(true);

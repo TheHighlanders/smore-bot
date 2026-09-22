@@ -47,6 +47,37 @@ void Station::update(uint32_t clock) {
     }
 }
 
+uint32_t Station::remainingMs(uint32_t clock) const {
+    uint32_t total = 0;
+    switch (m_phase) {
+        case Phase::Idle:
+            return 0;
+        case Phase::Done:
+            return kContinuous;  // No bound: waiting on the station after it.
+        case Phase::Arriving:
+            if (m_timing.workMs == kContinuous) {
+                return kContinuous;
+            }
+            total = m_timing.transitMs + m_timing.workMs + m_timing.clearMs;
+            break;
+        case Phase::Working:
+            if (m_timing.workMs == kContinuous) {
+                return kContinuous;
+            }
+            total = m_timing.workMs + m_timing.clearMs;
+            break;
+        case Phase::Clearing:
+            total = m_timing.clearMs;
+            break;
+    }
+    uint32_t elapsedMs = elapsed(clock);
+    return elapsedMs >= total ? 0 : total - elapsedMs;
+}
+
+bool Station::freeWithin(uint32_t clock, uint32_t slackMs) const {
+    return ready() && remainingMs(clock) <= slackMs;
+}
+
 bool Station::activate(uint32_t clock) {
     if (!free()) {
         return false;

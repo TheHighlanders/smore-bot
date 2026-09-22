@@ -131,6 +131,58 @@ void clear_time_gates_the_next_tray() {
     TEST_ASSERT_TRUE_MESSAGE(line.machine.startCycle(), "still blocked after clear time");
 }
 
+void free_within_covers_the_whole_remaining_cycle() {
+    Line line;
+    line.machine.run(true);
+    line.machine.startCycle();
+
+    // GC1 starts Working at 10 ms; by 200 ms it has ~1310 ms of work left
+    // plus the full 2000 ms clear, so ~3310 ms remain until idle.
+    line.run(200);
+    TEST_ASSERT_FALSE_MESSAGE(line.gc1.freeWithin(g_millis, 0), "reported free mid-work");
+    TEST_ASSERT_FALSE_MESSAGE(line.gc1.freeWithin(g_millis, 3000), "slack too small mid-work");
+    TEST_ASSERT_TRUE_MESSAGE(line.gc1.freeWithin(g_millis, 3310), "slack covers the full remainder");
+
+    line.gc1.readyGate = false;
+    TEST_ASSERT_FALSE_MESSAGE(line.gc1.freeWithin(g_millis, 10000), "ignored the ready gate");
+    line.gc1.readyGate = true;
+
+    // GC1 releases at 1510 ms and clears for 2000 ms, so ~1910 ms remain.
+    line.run(1400);
+    TEST_ASSERT_FALSE_MESSAGE(line.gc1.freeWithin(g_millis, 500), "slack too small to be free");
+    TEST_ASSERT_TRUE_MESSAGE(line.gc1.freeWithin(g_millis, 2000), "slack covers the remainder");
+
+    line.run(1900);  // ~10 ms of clearing left.
+    TEST_ASSERT_TRUE_MESSAGE(line.gc1.freeWithin(g_millis, 200), "small slack should cover this");
+
+    line.run(200);  // Fully idle.
+    TEST_ASSERT_TRUE_MESSAGE(line.gc1.freeWithin(g_millis, 0), "idle station reported not free");
+}
+
+void free_within_never_true_while_done() {
+    Line line;
+    line.choc.readyGate = false;  // Block GC1 from releasing into CHOC
+    line.machine.run(true);
+    line.machine.startCycle();
+
+    line.run(1600);  // GC1 finished work and is stuck in Done.
+    TEST_ASSERT_TRUE_MESSAGE(line.gc1.done(), "GC1 did not reach Done");
+    TEST_ASSERT_FALSE_MESSAGE(line.gc1.freeWithin(g_millis, 1000000),
+                               "Done reported free regardless of slack");
+}
+
+void free_within_covers_transit_time_while_arriving() {
+    Line line;
+    line.machine.run(true);
+    line.choc.activate(g_millis);  // Activate directly; CHOC has a real transitMs.
+
+    // CHOC (transitMs 3000, workMs 1500, clearMs 2000): 6500 ms to idle from
+    // the start of Arriving. By 500 ms, 6000 ms remain.
+    line.run(500);
+    TEST_ASSERT_FALSE_MESSAGE(line.choc.freeWithin(g_millis, 5999), "slack too small while arriving");
+    TEST_ASSERT_TRUE_MESSAGE(line.choc.freeWithin(g_millis, 6000), "slack covers the full remainder");
+}
+
 void belt_restarts_across_repeated_holds() {
     Line line;
     for (int i = 0; i < 5; i++) {
@@ -287,6 +339,9 @@ int main() {
     RUN_TEST(can_start_follows_the_entry_station);
     RUN_TEST(stopping_resets_every_station);
     RUN_TEST(clear_time_gates_the_next_tray);
+    RUN_TEST(free_within_covers_the_whole_remaining_cycle);
+    RUN_TEST(free_within_never_true_while_done);
+    RUN_TEST(free_within_covers_transit_time_while_arriving);
     RUN_TEST(belt_restarts_across_repeated_holds);
     RUN_TEST(continuous_station_never_completes);
     RUN_TEST(completion_is_reported_once_even_when_blocked);
