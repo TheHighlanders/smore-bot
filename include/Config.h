@@ -144,6 +144,10 @@ const Oven::Config kOven = {
     .clearMs = 5000,
 };
 
+// The oven accepts a new tray once GC2 is free or due to become free within
+// this long. 0 requires GC2 fully clear already.
+const uint32_t kOvenHandoffSlackMs = 0;
+
 const channelLabel kConveyorMotor = {kSlotDiscreteOut, 12};
 
 // Watchdog window. HOLD de-energizes every module output and halts the CPU
