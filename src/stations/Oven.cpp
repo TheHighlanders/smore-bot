@@ -11,6 +11,8 @@ Station::Timing Oven::timingFor(const Config& config) {
     return Timing{config.transitMs, config.cookMs, config.clearMs};
 }
 
+// Runs in every phase, not just Working, so the status line always shows a
+// current reading.
 void Oven::poll() {
     if (m_config.enabled) {
         m_temperature = m_p1.readTemperature(m_config.thermistor);
@@ -32,12 +34,12 @@ bool Oven::onWork(uint32_t /*elapsedMs*/) {
     return false;
 }
 
-void Oven::onComplete() { m_working = false; }
-
-void Oven::onRelease() {
+void Oven::onComplete() {
     setHeating(false);
-    setHeld(false);
+    m_working = false;
 }
+
+void Oven::onRelease() { setHeld(false); }
 
 void Oven::onReset() {
     setHeating(false);
