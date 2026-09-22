@@ -13,7 +13,10 @@ This code runs the smore making robot.
 
 1. Turn on the robot's 24V power.
 2. Plug the controller into your computer with a USB cable.
-3. Click the terminal button in the bar along the very bottom of VS Code.
+3. Click the New Terminal button from the PlatformIO quick actions menu. The default terminal will not have the pio command in it's path.
+
+<img width="559" height="820" alt="Screenshot 2026-09-17 at 7 06 41 PM" src="https://github.com/user-attachments/assets/bd6da0d0-00b4-4632-a717-34eeff0c0321" />
+
 4. Type this command and press Enter:
 
    ```
