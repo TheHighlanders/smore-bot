@@ -50,6 +50,7 @@ bool Oven::cancelCook() {
     if (!m_working) {
         return false;
     }
+    setHeating(false);
     m_cancelRequested = true;
     return true;
 }

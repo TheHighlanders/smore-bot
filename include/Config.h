@@ -82,9 +82,9 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 7},
-    .extend = {kSlotDiscreteOut, 15},
-    .extendMs = 7500,
-    .retractMs = 7500,
+    .extend = {kSlotDiscreteOut, 8}, // was 15, rewired to X when changed to pnumatic
+    .extendMs = 4000,
+    .retractMs = 2500,
     .transitMs = 0,  // Entry station
     .clearMs = 7000,
 };
@@ -102,7 +102,7 @@ const MotorDispenser::Config kMarshmallow = {
     .capture = {kSlotDiscreteOut, 5},
     .motor = {kSlotRelay, 8},
     .exitSensor = {kSlotDiscreteIn, 9},
-    .timeoutMs = 3500,
+    .timeoutMs = 2000,
     .transitMs = 5000,
     .clearMs = 7000,
 };
@@ -110,10 +110,11 @@ const MotorDispenser::Config kMarshmallow = {
 // One GC2 cycle, in order.
 const GcPusher::Move kGrahamCracker2Moves[] = {
     // lifterUp, clawClosed, pusherOut, ms
-    {true, false, true, 7000},    // extend graham cracker
-    {false, false, true, 2000},   // lower claw
+    {true, false, true, 8000},    // extend graham cracker
+    {false, false, true, 1500},   // lower claw
     {false, true, true, 2000},    // close claw
-    {true, true, false, 7000},    // raise claw, retract pusher
+    {true, true, true, 1500},    // raise claw
+    {true, true, false, 8500},    // raise claw, retract pusher
     {false, true, false, 2000},   // lower claw
     {false, false, false, 1000},  // open claw
     {true, false, false, 2000},   // raise claw
@@ -139,7 +140,7 @@ const Oven::Config kOven = {
     .heater = {kSlotRelay, 1},
     .hold = {kSlotDiscreteOut, 4},
     .thermistor = {kSlotThermistor, 1},  // Shown in status
-    .cookMs = 22 * 1000,
+    .cookMs = 26 * 1000,
     .transitMs = 7000,
     .clearMs = 5000,
 };
