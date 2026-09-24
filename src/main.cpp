@@ -2,6 +2,7 @@
 #include <P1AM.h>
 
 #include "Config.h"
+#include "HmiLink.h"
 #include "Log.h"
 #include "Rig.h"
 #include "SerialBoolean.h"
@@ -18,6 +19,7 @@ static SerialBoolean startCommand("start", EPHEMERAL);
 static SerialBoolean cancelCookCommand("cancel cook", EPHEMERAL);
 
 static bool ready = false;
+static bool hmiReady = false;
 static bool debugMode = false;
 static uint32_t lastModeReport = 0;
 static uint32_t lastInputReport = 0;
@@ -29,7 +31,11 @@ static const char* inputState(channelLabel channel) {
 }
 
 static void reportMode() {
-    logLine(debugMode ? "Debug mode" : "Smore mode");
+    const char* mode = debugMode ? "Debug mode" : "Smore mode";
+    logLine(mode);
+    if (hmiReady) {
+        hmi::showLine(mode);
+    }
 }
 
 // One short line so a 5s cadence stays readable in the monitor.
@@ -79,13 +85,25 @@ void setup() {
     P1.configWD(config::kWatchdogMs, HOLD);
     P1.startWD();
 
+    hmiReady = hmi::begin();
+    if (!hmiReady) {
+        logLine("EA3 display link failed to start; running without it.");
+    }
+
     logLine("Ready. Flip the run switch, then press start. Type 'debug' to check wiring.");
+    if (hmiReady) {
+        hmi::showLine("Ready. Flip run switch, press start.");
+    }
 }
 
 void loop() {
     String line;
     if (rig::readLine(line)) {
         handleLine(line);
+    }
+
+    if (hmiReady) {
+        hmi::poll();
     }
 
     if (!ready) {
@@ -109,7 +127,7 @@ void loop() {
 
     // A press starts a cycle when the entry station is free, so a held button
     // yields one tray per cycle.
-    if (startCommand.read() || rig::startEdge()) {
+    if (startCommand.read() || rig::startEdge() || (hmiReady && hmi::startEdge())) {
         startPending = true;
         startRequestedAt = millis();
     }
@@ -119,7 +137,11 @@ void loop() {
     if (startPending && millis() - startRequestedAt >= kStartDelayMs) {
         startPending = false;
         if (!machine.startCycle()) {
-            logLine("Start ignored: %s", machine.isRunning() ? "entry station busy" : "machine stopped");
+            const char* reason = machine.isRunning() ? "entry station busy" : "machine stopped";
+            logLine("Start ignored: %s", reason);
+            if (hmiReady) {
+                hmi::showLine("Start ignored: %s", reason);
+            }
         }
     }
 
@@ -129,11 +151,17 @@ void loop() {
         machine.printStatus();
     }
 
-    if (cancelCookCommand.read() || rig::cancelCookEdge()) {
+    if (cancelCookCommand.read() || rig::cancelCookEdge() || (hmiReady && hmi::cancelCookEdge())) {
         if (rig::oven().cancelCook()) {
             logLine("Oven: cook canceled");
+            if (hmiReady) {
+                hmi::showLine("Oven: cook canceled");
+            }
         } else {
             logLine("Cancel cook ignored: oven not cooking");
+            if (hmiReady) {
+                hmi::showLine("Cancel cook ignored: not cooking");
+            }
         }
     }
 

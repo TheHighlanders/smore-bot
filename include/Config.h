@@ -146,6 +146,23 @@ const Oven::Config kOven = {
 
 const channelLabel kConveyorMotor = {kSlotDiscreteOut, 12};
 
+// EA3-T4CL touchscreen link: Modbus RTU on Serial1 (pins 13/14), wired
+// through an external RS-232 transceiver -- not a P1000 base module, so it
+// doesn't appear in kModules above. The display is the Modbus master; this
+// board answers as the slave at kHmiSlaveId/kHmiBaud.
+//
+// Configure the C-more Micro project to match:
+//   - a string tag over holding registers kHmiLineRegister..
+//     +kHmiLineRegisterCount-1 (2 ASCII bytes/register) for the status line
+//   - momentary-write coils at kHmiStartCoil and kHmiCancelCookCoil for the
+//     start and cancel-cook buttons
+const uint8_t kHmiSlaveId = 1;
+const unsigned long kHmiBaud = 19200;
+const int kHmiLineRegister = 0;
+const int kHmiLineRegisterCount = 16;  // 32 ASCII chars, packed 2/register
+const int kHmiStartCoil = 0;
+const int kHmiCancelCookCoil = 1;
+
 // Watchdog window. HOLD de-energizes every module output and halts the CPU
 // until a power cycle, so a hung sketch turns the heater off.
 const uint16_t kWatchdogMs = 5000;
