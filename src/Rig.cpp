@@ -7,6 +7,7 @@
 #include "Config.h"
 #include "Log.h"
 #include "SerialBoolean.h"
+#include "leds/MockLedStrip.h"
 #include "stations/Belt.h"
 #include "stations/GcPusher.h"
 #include "stations/LinearDispenser.h"
@@ -18,6 +19,7 @@ namespace {
 
 Machine g_machine;
 Oven* g_oven = nullptr;
+StatusLeds* g_leds = nullptr;
 bool g_startWasPressed = false;
 bool g_cancelCookWasPressed = false;
 
@@ -45,6 +47,7 @@ bool verifyModules() {
 
 Machine& machine() { return g_machine; }
 Oven& oven() { return *g_oven; }
+StatusLeds& leds() { return *g_leds; }
 
 bool begin() {
     Serial.begin(115200);
@@ -74,6 +77,19 @@ bool begin() {
     g_oven = &oven;
     g_machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
                         {&belt});
+
+    // To use the real LED strip, change this line.
+    static MockLedStrip ledStrip(config::kLedCount);
+    // The belt goes first, so the stations draw over it.
+    static StatusLeds statusLeds(
+        ledStrip, config::kStatusLeds,
+        {{&belt, config::kPulse, config::kBeltLeds},
+         {&grahamCracker1, config::kPulse, config::kGrahamCracker1Leds},
+         {&chocolate, config::kPulse, config::kChocolateLeds},
+         {&marshmallow, config::kPulse, config::kMarshmallowLeds},
+         {&oven, config::kOvenPulse, config::kOvenLeds},
+         {&grahamCracker2, config::kPulse, config::kGrahamCracker2Leds}});
+    g_leds = &statusLeds;
     return true;
 }
 
