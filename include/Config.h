@@ -150,22 +150,24 @@ const channelLabel kConveyorMotor = {kSlotDiscreteOut, 12};
 // Each station lights its own range. The belt spans the whole strip and is drawn
 // first, so the stations cover it and it shows on the LEDs left over.
 //
-// CALIBRATE the pin, type, count and ranges against the real strip. LEDs past the
-// end of the strip are ignored.
+// CALIBRATE the pin, type, count, brightness and ranges against the real strip. LEDs
+// past the end of the strip are ignored.
 
 // Arduino pin of the strip's data wire (DIN). It sends 3.3V, so a 5V strip may
 // need a level shifter (74AHCT125).
 const uint8_t kLedPin = 4;
 // Color order and speed. If red shows as green, try NEO_RGB or NEO_BRG.
 const neoPixelType kLedType = NEO_GRB + NEO_KHZ800;
-const uint16_t kLedCount = 60;
+const uint16_t kLedCount = 50;
+const uint8_t kLedBrightness = 64;  // 0 (dark) to 255 (brightest), for every color
+const uint32_t kLampTestMs = 400;   // How long each startup color shows
 
 const StatusLeds::Range kBeltLeds = {0, kLedCount};  // First LED, LED count
-const StatusLeds::Range kGrahamCracker1Leds = {0, 10};
-const StatusLeds::Range kChocolateLeds = {10, 10};
-const StatusLeds::Range kMarshmallowLeds = {20, 10};
-const StatusLeds::Range kOvenLeds = {30, 10};
-const StatusLeds::Range kGrahamCracker2Leds = {40, 10};
+const StatusLeds::Range kGrahamCracker1Leds = {0, 9};
+const StatusLeds::Range kChocolateLeds = {9, 9};
+const StatusLeds::Range kMarshmallowLeds = {18, 9};
+const StatusLeds::Range kOvenLeds = {27, 9};
+const StatusLeds::Range kGrahamCracker2Leds = {36, 9};
 
 const Rgb kBlue = {0, 0, 255};
 const Rgb kGreen = {0, 255, 0};

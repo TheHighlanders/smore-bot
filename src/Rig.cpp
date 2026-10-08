@@ -42,6 +42,19 @@ bool verifyModules() {
     return ok;
 }
 
+// Lights every LED red, then green, then blue, then turns them off. Use it to check the
+// wiring and the color order.
+void lampTest(Adafruit_NeoPixel& strip) {
+    const Rgb colors[] = {config::kRed, config::kGreen, config::kBlue};
+    for (const Rgb& color : colors) {
+        strip.fill(Adafruit_NeoPixel::Color(color.r, color.g, color.b));
+        strip.show();
+        delay(config::kLampTestMs);
+    }
+    strip.clear();
+    strip.show();
+}
+
 }  // namespace
 
 Machine& machine() { return g_machine; }
@@ -53,10 +66,12 @@ bool begin() {
     pinMode(SWITCH_BUILTIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
 
-    // Start the strip dark, so its data wire never floats while the base controller starts.
+    // Start the strip before the base controller, so its data wire never floats.
+    // The lamp test checks the strip with no base controller connected.
     static Adafruit_NeoPixel ledStrip(config::kLedCount, config::kLedPin, config::kLedType);
     ledStrip.begin();
-    ledStrip.show();
+    ledStrip.setBrightness(config::kLedBrightness);
+    lampTest(ledStrip);
 
     logLine("Smore Bot starting, waiting for base controller");
     logLine("No response? Check the external 24V supply is on.");

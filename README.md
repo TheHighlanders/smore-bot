@@ -122,8 +122,10 @@ station is doing:
 | Solid green | Finished, tray still there |
 | Blue band moving | The tray is leaving |
 
-The oven uses red where the others use green, and pulses faster. The belt
-lights are blue when the belt is stopped and pulse green while it runs.
+The oven uses red where the others use green, and pulses faster. The lights left
+over show the belt: blue when it is stopped, pulsing green while it runs.
+
+When the robot starts, all the lights turn red, then green, then blue.
 
 The colors, speeds, light counts and data pin are in `include/Config.h`.
 

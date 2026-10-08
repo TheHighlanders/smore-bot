@@ -12,8 +12,8 @@
 static const uint32_t kModeReportMs = 15000;
 static const uint32_t kInputReportMs = 5000;
 static const uint32_t kStartDelayMs = 1000;
-// Sending a frame makes the clock lose a moment, so timers run long: about 2.5%
-// with 60 LEDs and a frame every 50 ms. More LEDs or more frames make it worse.
+// Sending a frame makes the clock lose a moment, so timers run long: about 2%
+// with 50 LEDs and a frame every 50 ms. More LEDs or more frames make it worse.
 static const uint32_t kLedFrameMs = 50;
 
 static SerialBoolean statusCommand("status", EPHEMERAL);
