@@ -4,7 +4,6 @@
 
 #include "Arduino.h"
 #include "FakeStation.h"
-#include "leds/MockLedStrip.h"
 #include "leds/StatusLeds.h"
 
 uint32_t g_millis = 0;
@@ -25,12 +24,10 @@ const StatusLeds::Pulse kFastPulse = {kRed, 400};
 
 const Station::Timing kTiming = {1000, 1000, 1000};
 
-bool same(Rgb a, Rgb b) { return a.r == b.r && a.g == b.g && a.b == b.b; }
+uint32_t packed(Rgb color) { return Adafruit_NeoPixel::Color(color.r, color.g, color.b); }
 
-void expectColor(Rgb expected, Rgb actual) {
-    TEST_ASSERT_EQUAL_UINT8(expected.r, actual.r);
-    TEST_ASSERT_EQUAL_UINT8(expected.g, actual.g);
-    TEST_ASSERT_EQUAL_UINT8(expected.b, actual.b);
+void expectColor(Rgb expected, uint32_t actual) {
+    TEST_ASSERT_EQUAL_HEX32(packed(expected), actual);
 }
 
 // A 16-LED strip:
@@ -38,7 +35,7 @@ void expectColor(Rgb expected, Rgb actual) {
 //   LEDs 1-10           station A
 //   LEDs 13-14          station B, shorter than a band
 struct Fixture {
-    MockLedStrip strip{16};
+    Adafruit_NeoPixel strip{16, 0};
     FakeStation a{"A", kTiming};
     FakeStation b{"B", kTiming};
     FakeStation belt{"BELT", Station::Timing{0, Station::kContinuous, 0}};
@@ -56,7 +53,7 @@ struct Fixture {
         for (uint16_t i = first; i < first + count; i++) {
             char letter = '?';
             for (const auto& entry : kLetters) {
-                if (same(strip.color(i), entry.color)) letter = entry.letter;
+                if (strip.getPixelColor(i) == packed(entry.color)) letter = entry.letter;
             }
             text += letter;
         }
@@ -127,11 +124,11 @@ void a_working_station_pulses_from_off_to_full() {
     f.leds.update(0);
     TEST_ASSERT_EQUAL_STRING("..........", f.stationA().c_str());
     f.leds.update(500);  // Rising
-    expectColor(Rgb{0, 127, 0}, f.strip.color(1));
+    expectColor(Rgb{0, 127, 0}, f.strip.getPixelColor(1));
     f.leds.update(1000);
     TEST_ASSERT_EQUAL_STRING("GGGGGGGGGG", f.stationA().c_str());
     f.leds.update(1500);  // Falling
-    expectColor(Rgb{0, 127, 0}, f.strip.color(1));
+    expectColor(Rgb{0, 127, 0}, f.strip.getPixelColor(1));
     f.leds.update(2000);
     TEST_ASSERT_EQUAL_STRING("..........", f.stationA().c_str());
 }
@@ -144,7 +141,7 @@ void a_station_can_pulse_in_its_own_color_and_rate() {
 
     f.leds.update(200);  // B is at full; A has barely started
     TEST_ASSERT_EQUAL_STRING("RR", f.stationB().c_str());
-    expectColor(Rgb{0, 51, 0}, f.strip.color(1));
+    expectColor(Rgb{0, 51, 0}, f.strip.getPixelColor(1));
 }
 
 void a_finished_station_stays_solid_in_its_pulse_color() {

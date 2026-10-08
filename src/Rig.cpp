@@ -7,7 +7,6 @@
 #include "Config.h"
 #include "Log.h"
 #include "SerialBoolean.h"
-#include "leds/MockLedStrip.h"
 #include "stations/Belt.h"
 #include "stations/GcPusher.h"
 #include "stations/LinearDispenser.h"
@@ -54,6 +53,11 @@ bool begin() {
     pinMode(SWITCH_BUILTIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
 
+    // Start the strip dark, so its data wire never floats while the base controller starts.
+    static Adafruit_NeoPixel ledStrip(config::kLedCount, config::kLedPin, config::kLedType);
+    ledStrip.begin();
+    ledStrip.show();
+
     logLine("Smore Bot starting, waiting for base controller");
     logLine("No response? Check the external 24V supply is on.");
     while (!P1.init()) {}
@@ -78,8 +82,6 @@ bool begin() {
     g_machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
                         {&belt});
 
-    // To use the real LED strip, change this line.
-    static MockLedStrip ledStrip(config::kLedCount);
     // The belt goes first, so the stations draw over it.
     static StatusLeds statusLeds(
         ledStrip, config::kStatusLeds,

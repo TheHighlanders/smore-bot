@@ -1,12 +1,16 @@
 #ifndef STATUSLEDS_H
 #define STATUSLEDS_H
 
+#include <Adafruit_NeoPixel.h>
 #include <stdint.h>
 
 #include <vector>
 
-#include "leds/LedStrip.h"
 #include "machine/Station.h"
+
+struct Rgb {
+    uint8_t r, g, b;
+};
 
 // Shows each station's phase on one LED strip. A zone is a station and the LEDs
 // it lights. Zones draw in order, so a later zone covers an earlier one. Config.h
@@ -37,7 +41,7 @@ class StatusLeds {
         Range leds;
     };
 
-    StatusLeds(LedStrip& strip, Config config, std::vector<Zone> zones)
+    StatusLeds(Adafruit_NeoPixel& strip, Config config, std::vector<Zone> zones)
         : m_strip(strip), m_config(config), m_zones(zones) {}
 
     // Draws every zone as it looks at `clock`.
@@ -47,7 +51,7 @@ class StatusLeds {
     Rgb colorAt(const Zone& zone, size_t position, uint32_t clock) const;
     bool inBand(size_t position, size_t count, uint32_t clock) const;
 
-    LedStrip& m_strip;
+    Adafruit_NeoPixel& m_strip;
     Config m_config;
     std::vector<Zone> m_zones;
 };

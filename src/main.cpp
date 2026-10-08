@@ -12,6 +12,9 @@
 static const uint32_t kModeReportMs = 15000;
 static const uint32_t kInputReportMs = 5000;
 static const uint32_t kStartDelayMs = 1000;
+// Sending a frame makes the clock lose a moment, so timers run long: about 2.5%
+// with 60 LEDs and a frame every 50 ms. More LEDs or more frames make it worse.
+static const uint32_t kLedFrameMs = 50;
 
 static SerialBoolean statusCommand("status", EPHEMERAL);
 static SerialBoolean startCommand("start", EPHEMERAL);
@@ -21,6 +24,7 @@ static bool ready = false;
 static bool debugMode = false;
 static uint32_t lastModeReport = 0;
 static uint32_t lastInputReport = 0;
+static uint32_t lastLedFrame = 0;
 static bool startPending = false;
 static uint32_t startRequestedAt = 0;
 
@@ -124,7 +128,10 @@ void loop() {
     }
 
     machine.update();
-    rig::leds().update(millis());
+    if (millis() - lastLedFrame >= kLedFrameMs) {
+        lastLedFrame = millis();
+        rig::leds().update(millis());
+    }
 
     if (statusCommand.read()) {
         machine.printStatus();

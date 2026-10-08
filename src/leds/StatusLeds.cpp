@@ -23,7 +23,8 @@ Rgb dimmed(Rgb color, uint8_t level) {
 void StatusLeds::update(uint32_t clock) {
     for (const Zone& zone : m_zones) {
         for (uint16_t i = 0; i < zone.leds.count; i++) {
-            m_strip.set(zone.leds.first + i, colorAt(zone, i, clock));
+            Rgb color = colorAt(zone, i, clock);
+            m_strip.setPixelColor(zone.leds.first + i, color.r, color.g, color.b);
         }
     }
     m_strip.show();

@@ -150,7 +150,14 @@ const channelLabel kConveyorMotor = {kSlotDiscreteOut, 12};
 // Each station lights its own range. The belt spans the whole strip and is drawn
 // first, so the stations cover it and it shows on the LEDs left over.
 //
-// CALIBRATE the count and ranges against the real strip.
+// CALIBRATE the pin, type, count and ranges against the real strip. LEDs past the
+// end of the strip are ignored.
+
+// Arduino pin of the strip's data wire (DIN). It sends 3.3V, so a 5V strip may
+// need a level shifter (74AHCT125).
+const uint8_t kLedPin = 4;
+// Color order and speed. If red shows as green, try NEO_RGB or NEO_BRG.
+const neoPixelType kLedType = NEO_GRB + NEO_KHZ800;
 const uint16_t kLedCount = 60;
 
 const StatusLeds::Range kBeltLeds = {0, kLedCount};  // First LED, LED count

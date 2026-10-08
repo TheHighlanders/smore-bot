@@ -125,7 +125,7 @@ station is doing:
 The oven uses red where the others use green, and pulses faster. The belt
 lights are blue when the belt is stopped and pulse green while it runs.
 
-The colors, speeds and light counts are in `include/Config.h`.
+The colors, speeds, light counts and data pin are in `include/Config.h`.
 
 ## 8. Change timings
 
