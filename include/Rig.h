@@ -3,16 +3,19 @@
 
 #include <Arduino.h>
 
+#include "leds/StatusLeds.h"
 #include "machine/Machine.h"
 #include "stations/Oven.h"
 
 // Hardware for the machine build: base controller start-up, module
-// verification, the assembled station line, and the operator inputs.
+// verification, the assembled station line, the status LEDs, and the operator
+// inputs.
 namespace rig {
 
 bool begin();  // True when the base matches Config.h
 Machine& machine();
-Oven& oven();  // Valid once begin() returns true
+Oven& oven();        // Valid once begin() returns true
+StatusLeds& leds();  // Valid once begin() returns true
 
 bool readLine(String& line);     // True once a full line is available, trimmed
 
