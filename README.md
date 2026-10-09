@@ -130,6 +130,9 @@ over show the belt: blue when it is stopped, pulsing green while it runs.
 
 The colors, speeds, light counts and data pin are in `include/Config.h`.
 
+Not sure what strip you have? Follow
+[tools/led_probe/README.md](tools/led_probe/README.md).
+
 ## 8. Change timings
 
 Times are in `include/Config.h`. `1000` means 1 second.
