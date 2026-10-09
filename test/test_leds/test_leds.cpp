@@ -90,15 +90,13 @@ void idle_stations_show_their_own_color_and_the_belt_is_blue() {
     TEST_ASSERT_EQUAL_STRING("BBBB", f.beltLeds().c_str());
 }
 
-void the_belt_lights_the_leds_left_over_by_stations() {
+void the_belt_stays_blue_while_the_machine_runs() {
     Fixture f;
     f.belt.activate(0);
-    f.belt.update(0);     // Belt runs
-    f.draw(1000);  // Half a pulse: brightest
+    f.belt.update(0);  // Belt runs
+    f.draw(1000, true);
 
-    TEST_ASSERT_EQUAL_STRING("GGGG", f.beltLeds().c_str());
-    TEST_ASSERT_EQUAL_STRING("PPPPPPPPPP", f.stationA().c_str());
-    TEST_ASSERT_EQUAL_STRING("OO", f.stationB().c_str());
+    TEST_ASSERT_EQUAL_STRING("BBBB", f.beltLeds().c_str());
 }
 
 void idle_stations_are_blue_while_the_machine_runs() {
@@ -195,7 +193,7 @@ void every_update_lights_the_strip() {
 int main() {
     UNITY_BEGIN();
     RUN_TEST(idle_stations_show_their_own_color_and_the_belt_is_blue);
-    RUN_TEST(the_belt_lights_the_leds_left_over_by_stations);
+    RUN_TEST(the_belt_stays_blue_while_the_machine_runs);
     RUN_TEST(idle_stations_are_blue_while_the_machine_runs);
     RUN_TEST(a_waiting_station_shows_a_band_moving_from_start_to_end);
     RUN_TEST(a_band_fills_a_station_shorter_than_the_band);
