@@ -116,7 +116,7 @@ station is doing:
 
 | Lights | Meaning |
 | --- | --- |
-| The station's own color | Waiting for its turn |
+| Blue, or the station's own color when the run switch is off | Waiting for its turn |
 | Green band moving | Waiting for the tray to arrive |
 | Pulsing green | Working |
 | Solid green | Finished, tray still there |
@@ -124,8 +124,6 @@ station is doing:
 
 The oven uses red where the others use green, and pulses faster. The lights left
 over show the belt: blue when it is stopped, pulsing green while it runs.
-
-When the robot starts, all the lights turn red, then green, then blue.
 
 The colors, speeds, light counts and data pin are in `include/Config.h`.
 

@@ -155,7 +155,7 @@ const channelLabel kConveyorMotor = {kSlotDiscreteOut, 12};
 
 // Arduino pin of the strip's data wire (DIN). It sends 3.3V, so a 5V strip may
 // need a level shifter (74AHCT125).
-const uint8_t kLedPin = 4;
+const uint8_t kLedPin = 0;
 // Color order and speed. If red shows as green, try NEO_RGB or NEO_BRG.
 const neoPixelType kLedType = NEO_GRB + NEO_KHZ800;
 const uint16_t kLedCount = 50;
@@ -177,7 +177,7 @@ const Rgb kCyan = {0, 255, 255};
 const Rgb kBlue = {0, 0, 255};
 const Rgb kViolet = {128, 0, 255};
 
-// Each station's idle color. Pick colors that are easy to tell apart.
+// Each station's color when the machine is stopped. Pick colors that are easy to tell apart.
 const Rgb kBeltIdle = kBlue;
 const Rgb kGrahamCracker1Idle = kRed;
 const Rgb kChocolateIdle = kOrange;
@@ -187,7 +187,7 @@ const Rgb kGrahamCracker2Idle = kViolet;
 
 // Every station shows:
 //
-//   idle      solid, in its own color (see above)
+//   idle      solid blue while running, else the station's own color (see above)
 //   arriving  green band, waiting for the tray
 //   working   pulsing (see kPulse)
 //   done      solid, in the pulse color
@@ -195,6 +195,7 @@ const Rgb kGrahamCracker2Idle = kViolet;
 //
 // A band moves from the station's first LED to its last.
 const StatusLeds::Config kStatusLeds = {
+    .runningIdle = kBlue,
     .arriving = kGreen,
     .clearing = kBlue,
     .bandWidth = 3,

@@ -67,6 +67,10 @@ static void handleLine(const String& line) {
         }
         return;
     }
+    if(line == "led") {
+        rig::leds().selfTest();
+        return;
+    }
     // Typing 'debug' is already an explicit opt-in, so a station name runs
     // its selfTest right away.
     if (!rig::machine().selfTestNamed(line.c_str())) {
@@ -128,9 +132,9 @@ void loop() {
     }
 
     machine.update();
-    if (millis() - lastLedFrame >= kLedFrameMs) {
+    if (!debugMode && millis() - lastLedFrame >= kLedFrameMs) {
         lastLedFrame = millis();
-        rig::leds().update(millis());
+        rig::leds().update(millis(), machine.isRunning());
     }
 
     if (statusCommand.read()) {

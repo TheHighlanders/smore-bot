@@ -18,6 +18,7 @@ struct Rgb {
 class StatusLeds {
    public:
     struct Config {
+        Rgb runningIdle;      // Idle color while the machine runs
         Rgb arriving;         // Band color
         Rgb clearing;         // Band color
         uint16_t bandWidth;   // LEDs in a band
@@ -44,11 +45,12 @@ class StatusLeds {
     StatusLeds(Adafruit_NeoPixel& strip, Config config, std::vector<Zone> zones)
         : m_strip(strip), m_config(config), m_zones(zones) {}
 
-    // Draws every zone as it looks at `clock`.
-    void update(uint32_t clock);
+    // Draws every zone as it looks at `clock`. `running` is whether the machine runs.
+    void update(uint32_t clock, bool running);
+    void selfTest();
 
    private:
-    Rgb colorAt(const Zone& zone, size_t position, uint32_t clock) const;
+    Rgb colorAt(const Zone& zone, size_t position, uint32_t clock, bool running) const;
     bool inBand(size_t position, size_t count, uint32_t clock) const;
 
     Adafruit_NeoPixel& m_strip;
