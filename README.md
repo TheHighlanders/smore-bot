@@ -13,7 +13,10 @@ This code runs the smore making robot.
 
 1. Turn on the robot's 24V power.
 2. Plug the controller into your computer with a USB cable.
-3. Click the terminal button in the bar along the very bottom of VS Code.
+3. Click the New Terminal button from the PlatformIO quick actions menu. The default terminal will not have the pio command in it's path.
+
+<img width="559" height="820" alt="Screenshot 2026-09-17 at 7 06 41 PM" src="https://github.com/user-attachments/assets/bd6da0d0-00b4-4632-a717-34eeff0c0321" />
+
 4. Type this command and press Enter:
 
    ```
@@ -109,11 +112,29 @@ you can always tell which one the robot is in.
 
 **To stop in an emergency, press the e-stop button.**
 
-## 7. Change timings
+## 7. Read the status lights
+
+Once the light strip is wired in, the lights along the belt show what each
+station is doing:
+
+| Lights | Meaning |
+| --- | --- |
+| Blue, or the station's own color when the run switch is off | Waiting for its turn |
+| Green band moving | Waiting for the tray to arrive |
+| Pulsing green | Working |
+| Solid green | Finished, tray still there |
+| Blue band moving | The tray is leaving |
+
+The oven uses red where the others use green, and pulses faster. The lights left
+over show the belt: blue when it is stopped, pulsing green while it runs.
+
+The colors, speeds, light counts and data pin are in `include/Config.h`.
+
+## 8. Change timings
 
 Times are in `include/Config.h`. `1000` means 1 second.
 
-## 8. Run the tests
+## 9. Run the tests
 
 This checks the robot's logic on your computer. The robot does not need to be
 plugged in.
