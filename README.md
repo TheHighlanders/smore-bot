@@ -120,13 +120,13 @@ station is doing:
 | Lights | Meaning |
 | --- | --- |
 | Blue, or the station's own color when the run switch is off | Waiting for its turn |
-| Green band moving | Waiting for the tray to arrive |
-| Pulsing green | Working |
+| Blue band moving | Waiting for the tray to arrive |
+| Pulsing, with a bar filling from blue to green | Working |
 | Solid green | Finished, tray still there |
-| Blue band moving | The tray is leaving |
+| Green band moving | The tray is leaving |
 
-The oven uses red where the others use green, and pulses faster. The lights left
-over show the belt, in blue.
+The oven pulses faster than the others. The lights left over show the belt, in
+blue.
 
 The colors, speeds, light counts and data pin are in `include/Config.h`.
 

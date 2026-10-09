@@ -14,13 +14,19 @@ namespace {
 const Rgb kOff = {0, 0, 0};
 const Rgb kBlue = {0, 0, 255};
 const Rgb kGreen = {0, 255, 0};
-const Rgb kYellow = {255, 255, 0};
 const Rgb kRed = {255, 0, 0};
 const Rgb kOrange = {255, 128, 0};
 const Rgb kPurple = {128, 0, 255};
 
-// Clearing is yellow so it differs from idle and arriving.
-const StatusLeds::Config kConfig = {kBlue, kGreen, kYellow, 3, 100};
+// Blue accepts, green clears, and a progress bar runs from blue to green.
+const StatusLeds::Config kConfig = {kBlue, kBlue, kGreen, kBlue, kGreen,
+                                    3,     100,   BandMotion::kWrap, WorkLook::kProgress};
+
+// The old look: each band jumps back to the first LED, and a working station
+// pulses its own color.
+const StatusLeds::Config kOldConfig = {kBlue, kBlue, kGreen, kBlue, kGreen,
+                                       3,     100,   BandMotion::kJump, WorkLook::kPulse};
+
 const StatusLeds::Pulse kPulse = {kGreen, 2000};
 const StatusLeds::Pulse kFastPulse = {kRed, 400};
 
@@ -41,18 +47,20 @@ struct Fixture {
     FakeStation a{"A", kTiming};
     FakeStation b{"B", kTiming};
     FakeStation belt{"BELT", Station::Timing{0, Station::kContinuous, 0}};
-    StatusLeds leds{strip,
-                    kConfig,
-                    {{&belt, kBlue, kPulse, {0, 16}},
-                     {&a, kPurple, kPulse, {1, 10}},
-                     {&b, kOrange, kFastPulse, {13, 2}}}};
+    StatusLeds leds;
+
+    explicit Fixture(StatusLeds::Config config = kConfig)
+        : leds(strip, config,
+               {{&belt, kBlue, kPulse, {0, 16}},
+                {&a, kPurple, kPulse, {1, 10}},
+                {&b, kOrange, kFastPulse, {13, 2}}}) {}
 
     std::string pattern(uint16_t first, uint16_t count) const {
         const struct {
             Rgb color;
             char letter;
-        } kLetters[] = {{kOff, '.'},       {kBlue, 'B'},   {kGreen, 'G'}, {kYellow, 'Y'},
-                        {kRed, 'R'},       {kOrange, 'O'}, {kPurple, 'P'}};
+        } kLetters[] = {{kOff, '.'},       {kBlue, 'B'},   {kGreen, 'G'}, {kRed, 'R'},
+                        {kOrange, 'O'}, {kPurple, 'P'}};
 
         std::string text;
         for (uint16_t i = first; i < first + count; i++) {
@@ -74,7 +82,7 @@ struct Fixture {
 
     void workA() {
         a.activate(0);
-        a.update(1000);  // Tray arrives
+        a.update(1000);  // Tray arrives, work starts at 1000
     }
 };
 
@@ -108,20 +116,34 @@ void idle_stations_are_blue_while_the_machine_runs() {
     TEST_ASSERT_EQUAL_STRING("BBBB", f.beltLeds().c_str());
 }
 
-void a_waiting_station_shows_a_band_moving_from_start_to_end() {
+void a_band_wraps_around_the_zone() {
     Fixture f;
     f.a.activate(0);
 
     f.draw(0);
-    TEST_ASSERT_EQUAL_STRING("GGG.......", f.stationA().c_str());
+    TEST_ASSERT_EQUAL_STRING("BBB.......", f.stationA().c_str());
     f.draw(100);
-    TEST_ASSERT_EQUAL_STRING(".GGG......", f.stationA().c_str());
+    TEST_ASSERT_EQUAL_STRING(".BBB......", f.stationA().c_str());
     f.draw(700);
-    TEST_ASSERT_EQUAL_STRING(".......GGG", f.stationA().c_str());
-    f.draw(800);  // Back to the start
-    TEST_ASSERT_EQUAL_STRING("GGG.......", f.stationA().c_str());
+    TEST_ASSERT_EQUAL_STRING(".......BBB", f.stationA().c_str());
+    f.draw(800);  // Last LED and first LED
+    TEST_ASSERT_EQUAL_STRING("B.......BB", f.stationA().c_str());
+    f.draw(900);
+    TEST_ASSERT_EQUAL_STRING("BB.......B", f.stationA().c_str());
 
     TEST_ASSERT_EQUAL_STRING("OO", f.stationB().c_str());  // B is idle
+}
+
+void a_jumping_band_restarts_at_the_first_led() {
+    Fixture f{kOldConfig};
+    f.a.activate(0);
+
+    f.draw(0);
+    TEST_ASSERT_EQUAL_STRING("BBB.......", f.stationA().c_str());
+    f.draw(700);
+    TEST_ASSERT_EQUAL_STRING(".......BBB", f.stationA().c_str());
+    f.draw(800);  // Back to the start
+    TEST_ASSERT_EQUAL_STRING("BBB.......", f.stationA().c_str());
 }
 
 void a_band_fills_a_station_shorter_than_the_band() {
@@ -129,11 +151,11 @@ void a_band_fills_a_station_shorter_than_the_band() {
     f.b.activate(0);
     f.draw(100);
 
-    TEST_ASSERT_EQUAL_STRING("GG", f.stationB().c_str());
+    TEST_ASSERT_EQUAL_STRING("BB", f.stationB().c_str());
 }
 
 void a_working_station_pulses_from_off_to_full() {
-    Fixture f;
+    Fixture f{kOldConfig};
     f.workA();
 
     f.draw(0);
@@ -149,7 +171,7 @@ void a_working_station_pulses_from_off_to_full() {
 }
 
 void a_station_can_pulse_in_its_own_color_and_rate() {
-    Fixture f;
+    Fixture f{kOldConfig};
     f.workA();
     f.b.activate(0);
     f.b.update(1000);
@@ -159,25 +181,55 @@ void a_station_can_pulse_in_its_own_color_and_rate() {
     expectColor(Rgb{0, 51, 0}, f.strip.getPixelColor(1));
 }
 
-void a_finished_station_stays_solid_in_its_pulse_color() {
+void a_working_station_starts_with_a_blue_bar() {
     Fixture f;
     f.workA();
-    f.a.update(2000);  // Work ends, tray still held
 
-    f.draw(0);
-    TEST_ASSERT_EQUAL_STRING("GGGGGGGGGG", f.stationA().c_str());
-    f.draw(1234);
-    TEST_ASSERT_EQUAL_STRING("GGGGGGGGGG", f.stationA().c_str());
+    f.draw(1000);  // Pulse at its brightest, no work done yet
+    TEST_ASSERT_EQUAL_STRING("BBBBBBBBBB", f.stationA().c_str());
 }
 
-void a_clearing_station_shows_a_band_in_the_clearing_color() {
+void a_progress_bar_fills_from_the_first_led() {
+    Adafruit_NeoPixel strip{10, 0};
+    FakeStation station{"A", Station::Timing{0, 1000, 0}};
+    StatusLeds leds{strip, kConfig, {{&station, kPurple, kPulse, {0, 10}}}};
+
+    // Work starts at 500, so half is done at 1000. Clock 1000 is the pulse peak,
+    // so the colors are not dimmed.
+    station.activate(500);
+    station.update(500);
+    leds.update(1000, false);
+
+    expectColor(kGreen, strip.getPixelColor(0));
+    expectColor(kGreen, strip.getPixelColor(3));
+    expectColor(kBlue, strip.getPixelColor(6));
+    expectColor(kBlue, strip.getPixelColor(9));
+}
+
+void a_finished_station_stays_solid_green() {
+    // The pulse is red, so only the done color can make these LEDs green.
+    Adafruit_NeoPixel strip{10, 0};
+    FakeStation station{"A", Station::Timing{0, 1000, 0}};
+    StatusLeds leds{strip, kConfig, {{&station, kPurple, kFastPulse, {0, 10}}}};
+
+    station.activate(0);
+    station.update(0);
+    station.update(1000);  // Work ends, tray still held
+
+    leds.update(0, false);
+    expectColor(kGreen, strip.getPixelColor(0));
+    leds.update(1234, false);
+    expectColor(kGreen, strip.getPixelColor(9));
+}
+
+void a_clearing_station_shows_a_green_band() {
     Fixture f;
     f.workA();
     f.a.update(2000);
     f.a.deactivate(2000);  // Tray leaves
 
     f.draw(0);
-    TEST_ASSERT_EQUAL_STRING("YYY.......", f.stationA().c_str());
+    TEST_ASSERT_EQUAL_STRING("GGG.......", f.stationA().c_str());
 }
 
 void every_update_lights_the_strip() {
@@ -195,12 +247,15 @@ int main() {
     RUN_TEST(idle_stations_show_their_own_color_and_the_belt_is_blue);
     RUN_TEST(the_belt_stays_blue_while_the_machine_runs);
     RUN_TEST(idle_stations_are_blue_while_the_machine_runs);
-    RUN_TEST(a_waiting_station_shows_a_band_moving_from_start_to_end);
+    RUN_TEST(a_band_wraps_around_the_zone);
+    RUN_TEST(a_jumping_band_restarts_at_the_first_led);
     RUN_TEST(a_band_fills_a_station_shorter_than_the_band);
     RUN_TEST(a_working_station_pulses_from_off_to_full);
     RUN_TEST(a_station_can_pulse_in_its_own_color_and_rate);
-    RUN_TEST(a_finished_station_stays_solid_in_its_pulse_color);
-    RUN_TEST(a_clearing_station_shows_a_band_in_the_clearing_color);
+    RUN_TEST(a_working_station_starts_with_a_blue_bar);
+    RUN_TEST(a_progress_bar_fills_from_the_first_led);
+    RUN_TEST(a_finished_station_stays_solid_green);
+    RUN_TEST(a_clearing_station_shows_a_green_band);
     RUN_TEST(every_update_lights_the_strip);
     return UNITY_END();
 }

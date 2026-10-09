@@ -203,6 +203,28 @@ void continuous_station_never_completes() {
     TEST_ASSERT_TRUE(line.belt.occupied);
 }
 
+void work_progress_fills_across_the_work_phase() {
+    FakeStation station{"S", Station::Timing{0, 1000, 0}};
+    TEST_ASSERT_EQUAL_UINT8(0, station.workProgress(0));  // Idle
+
+    station.activate(0);
+    station.update(0);  // Working from 0
+    TEST_ASSERT_EQUAL_UINT8(0, station.workProgress(0));
+    TEST_ASSERT_EQUAL_UINT8(127, station.workProgress(500));
+    TEST_ASSERT_EQUAL_UINT8(255, station.workProgress(1000));
+    TEST_ASSERT_EQUAL_UINT8(255, station.workProgress(5000));  // Past workMs, not yet Done
+
+    station.update(1000);  // Done
+    TEST_ASSERT_EQUAL_UINT8(0, station.workProgress(1000));
+}
+
+void work_progress_is_zero_for_continuous_work() {
+    FakeStation belt{"BELT", Station::Timing{0, Station::kContinuous, 0}};
+    belt.activate(0);
+    belt.update(0);
+    TEST_ASSERT_EQUAL_UINT8(0, belt.workProgress(100000));
+}
+
 // A blocked station reports completion once and keeps its tray. Gate the oven
 // closed and hold MM at Done for a long time.
 void completion_is_reported_once_even_when_blocked() {
@@ -344,6 +366,8 @@ int main() {
     RUN_TEST(free_within_covers_transit_time_while_arriving);
     RUN_TEST(belt_restarts_across_repeated_holds);
     RUN_TEST(continuous_station_never_completes);
+    RUN_TEST(work_progress_fills_across_the_work_phase);
+    RUN_TEST(work_progress_is_zero_for_continuous_work);
     RUN_TEST(completion_is_reported_once_even_when_blocked);
     RUN_TEST(a_station_that_is_not_ready_blocks_the_line);
     RUN_TEST(hooks_fire_in_order);
