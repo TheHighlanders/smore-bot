@@ -42,6 +42,7 @@ class Station {
     bool freeWithin(uint32_t clock, uint32_t slackMs) const;
     bool done() const { return m_phase == Phase::Done; }
     Phase phase() const { return m_phase; }
+    bool continuous() const { return m_timing.workMs == kContinuous; }
 
     const std::string& name() const { return m_name; }
     std::string state() const;
