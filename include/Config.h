@@ -180,7 +180,7 @@ const Rgb kYellow = {255, 255, 0};
 const Rgb kGreen = {0, 255, 0};
 const Rgb kCyan = {0, 255, 255};
 const Rgb kBlue = {0, 0, 255};
-const Rgb kViolet = {128, 0, 255};
+const Rgb kPurple = {160, 32, 240};
 
 // Each station's color when the machine is stopped. Pick colors that are easy to tell apart.
 const Rgb kBeltIdle = kBlue;
@@ -188,26 +188,32 @@ const Rgb kGrahamCracker1Idle = kRed;
 const Rgb kChocolateIdle = kOrange;
 const Rgb kMarshmallowIdle = kYellow;
 const Rgb kOvenIdle = kCyan;
-const Rgb kGrahamCracker2Idle = kViolet;
+const Rgb kGrahamCracker2Idle = kPurple;
 
 // Every station shows:
 //
 //   idle      solid blue while running, else the station's own color (see above)
-//   arriving  green band, waiting for the tray
-//   working   pulsing (see kPulse)
-//   done      solid, in the pulse color
-//   clearing  blue band, tray leaving
+//   arriving  blue band, waiting for the tray
+//   working   a bar filling from blue to green (or WorkLook::kPulse for a pulse)
+//   done      solid green
+//   clearing  green band, tray leaving
 //
-// A band moves from the station's first LED to its last.
+// Bands wrap around the zone with BandMotion::kWrap. BandMotion::kJump starts
+// each band again at the first LED. WorkLook::kPulse pulses the station's own
+// color.
 const StatusLeds::Config kStatusLeds = {
     .runningIdle = kBlue,
-    .arriving = kGreen,
-    .clearing = kBlue,
+    .arriving = kBlue,
+    .clearing = kGreen,
+    .fillFrom = kBlue,
+    .fillTo = kGreen,
     .bandWidth = 3,
     .bandStepMs = 100,
+    .band = BandMotion::kWrap,
+    .work = WorkLook::kProgress,
 };
 
-// Working look: color, milliseconds per pulse.
+// Pulse rate for each station, in milliseconds. WorkLook::kPulse also uses the color.
 const StatusLeds::Pulse kPulse = {kGreen, 2000};
 const StatusLeds::Pulse kOvenPulse = {kRed, 800};
 

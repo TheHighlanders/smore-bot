@@ -78,6 +78,15 @@ bool Station::freeWithin(uint32_t clock, uint32_t slackMs) const {
     return ready() && remainingMs(clock) <= slackMs;
 }
 
+uint8_t Station::workProgress(uint32_t clock) const {
+    if (m_phase != Phase::Working || continuous() || m_timing.workMs == 0) {
+        return 0;
+    }
+    uint32_t worked = elapsed(clock);
+    uint32_t done = worked < m_timing.workMs ? worked : m_timing.workMs;
+    return done * 255 / m_timing.workMs;
+}
+
 bool Station::activate(uint32_t clock) {
     if (!free()) {
         return false;
