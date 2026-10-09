@@ -126,7 +126,7 @@ station is doing:
 | Blue band moving | The tray is leaving |
 
 The oven uses red where the others use green, and pulses faster. The lights left
-over show the belt: blue when it is stopped, pulsing green while it runs.
+over show the belt, in blue.
 
 The colors, speeds, light counts and data pin are in `include/Config.h`.
 

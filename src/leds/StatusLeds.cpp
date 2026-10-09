@@ -32,7 +32,10 @@ void StatusLeds::update(uint32_t clock, bool running) {
 }
 
 Rgb StatusLeds::colorAt(const Zone& zone, size_t position, uint32_t clock, bool running) const {
-    switch (zone.station->phase()) {
+    // The belt works for the whole run, so it stays idle.
+    Station::Phase phase =
+        zone.station->continuous() ? Station::Phase::Idle : zone.station->phase();
+    switch (phase) {
         case Station::Phase::Idle:
             return running ? m_config.runningIdle : zone.idle;
         case Station::Phase::Arriving:
