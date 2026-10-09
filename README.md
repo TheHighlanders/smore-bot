@@ -116,7 +116,7 @@ station is doing:
 
 | Lights | Meaning |
 | --- | --- |
-| Blue | Waiting for its turn |
+| The station's own color | Waiting for its turn |
 | Green band moving | Waiting for the tray to arrive |
 | Pulsing green | Working |
 | Solid green | Finished, tray still there |

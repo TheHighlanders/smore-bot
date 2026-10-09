@@ -18,7 +18,6 @@ struct Rgb {
 class StatusLeds {
    public:
     struct Config {
-        Rgb idle;
         Rgb arriving;         // Band color
         Rgb clearing;         // Band color
         uint16_t bandWidth;   // LEDs in a band
@@ -37,6 +36,7 @@ class StatusLeds {
 
     struct Zone {
         const Station* station;
+        Rgb idle;  // Color when idle
         Pulse pulse;
         Range leds;
     };

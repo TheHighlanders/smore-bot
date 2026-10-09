@@ -33,7 +33,7 @@ void StatusLeds::update(uint32_t clock) {
 Rgb StatusLeds::colorAt(const Zone& zone, size_t position, uint32_t clock) const {
     switch (zone.station->phase()) {
         case Station::Phase::Idle:
-            return m_config.idle;
+            return zone.idle;
         case Station::Phase::Arriving:
             return inBand(position, zone.leds.count, clock) ? m_config.arriving : kOff;
         case Station::Phase::Working:

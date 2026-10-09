@@ -169,13 +169,25 @@ const StatusLeds::Range kMarshmallowLeds = {18, 9};
 const StatusLeds::Range kOvenLeds = {27, 9};
 const StatusLeds::Range kGrahamCracker2Leds = {36, 9};
 
-const Rgb kBlue = {0, 0, 255};
-const Rgb kGreen = {0, 255, 0};
 const Rgb kRed = {255, 0, 0};
+const Rgb kOrange = {255, 128, 0};
+const Rgb kYellow = {255, 255, 0};
+const Rgb kGreen = {0, 255, 0};
+const Rgb kCyan = {0, 255, 255};
+const Rgb kBlue = {0, 0, 255};
+const Rgb kViolet = {128, 0, 255};
+
+// Each station's idle color. Pick colors that are easy to tell apart.
+const Rgb kBeltIdle = kBlue;
+const Rgb kGrahamCracker1Idle = kRed;
+const Rgb kChocolateIdle = kOrange;
+const Rgb kMarshmallowIdle = kYellow;
+const Rgb kOvenIdle = kCyan;
+const Rgb kGrahamCracker2Idle = kViolet;
 
 // Every station shows:
 //
-//   idle      solid blue
+//   idle      solid, in its own color (see above)
 //   arriving  green band, waiting for the tray
 //   working   pulsing (see kPulse)
 //   done      solid, in the pulse color
@@ -183,7 +195,6 @@ const Rgb kRed = {255, 0, 0};
 //
 // A band moves from the station's first LED to its last.
 const StatusLeds::Config kStatusLeds = {
-    .idle = kBlue,
     .arriving = kGreen,
     .clearing = kBlue,
     .bandWidth = 3,

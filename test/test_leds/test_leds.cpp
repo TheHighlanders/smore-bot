@@ -16,9 +16,11 @@ const Rgb kBlue = {0, 0, 255};
 const Rgb kGreen = {0, 255, 0};
 const Rgb kYellow = {255, 255, 0};
 const Rgb kRed = {255, 0, 0};
+const Rgb kOrange = {255, 128, 0};
+const Rgb kPurple = {128, 0, 255};
 
 // Clearing is yellow so it differs from idle and arriving.
-const StatusLeds::Config kConfig = {kBlue, kGreen, kYellow, 3, 100};
+const StatusLeds::Config kConfig = {kGreen, kYellow, 3, 100};
 const StatusLeds::Pulse kPulse = {kGreen, 2000};
 const StatusLeds::Pulse kFastPulse = {kRed, 400};
 
@@ -31,9 +33,9 @@ void expectColor(Rgb expected, uint32_t actual) {
 }
 
 // A 16-LED strip:
-//   LEDs 0, 11, 12, 15  belt (the LEDs left over)
-//   LEDs 1-10           station A
-//   LEDs 13-14          station B, shorter than a band
+//   LEDs 0, 11, 12, 15  belt (the LEDs left over), idle blue
+//   LEDs 1-10           station A, idle purple
+//   LEDs 13-14          station B, idle orange, shorter than a band
 struct Fixture {
     Adafruit_NeoPixel strip{16, 0};
     FakeStation a{"A", kTiming};
@@ -41,13 +43,16 @@ struct Fixture {
     FakeStation belt{"BELT", Station::Timing{0, Station::kContinuous, 0}};
     StatusLeds leds{strip,
                     kConfig,
-                    {{&belt, kPulse, {0, 16}}, {&a, kPulse, {1, 10}}, {&b, kFastPulse, {13, 2}}}};
+                    {{&belt, kBlue, kPulse, {0, 16}},
+                     {&a, kPurple, kPulse, {1, 10}},
+                     {&b, kOrange, kFastPulse, {13, 2}}}};
 
     std::string pattern(uint16_t first, uint16_t count) const {
         const struct {
             Rgb color;
             char letter;
-        } kLetters[] = {{kOff, '.'}, {kBlue, 'B'}, {kGreen, 'G'}, {kYellow, 'Y'}, {kRed, 'R'}};
+        } kLetters[] = {{kOff, '.'},       {kBlue, 'B'},   {kGreen, 'G'}, {kYellow, 'Y'},
+                        {kRed, 'R'},       {kOrange, 'O'}, {kPurple, 'P'}};
 
         std::string text;
         for (uint16_t i = first; i < first + count; i++) {
@@ -73,12 +78,12 @@ struct Fixture {
 void setUp() { g_millis = 0; }
 void tearDown() {}
 
-void idle_stations_and_the_belt_are_blue() {
+void idle_stations_show_their_own_color_and_the_belt_is_blue() {
     Fixture f;
     f.leds.update(0);
 
-    TEST_ASSERT_EQUAL_STRING("BBBBBBBBBB", f.stationA().c_str());
-    TEST_ASSERT_EQUAL_STRING("BB", f.stationB().c_str());
+    TEST_ASSERT_EQUAL_STRING("PPPPPPPPPP", f.stationA().c_str());
+    TEST_ASSERT_EQUAL_STRING("OO", f.stationB().c_str());
     TEST_ASSERT_EQUAL_STRING("BBBB", f.beltLeds().c_str());
 }
 
@@ -89,8 +94,8 @@ void the_belt_lights_the_leds_left_over_by_stations() {
     f.leds.update(1000);  // Half a pulse: brightest
 
     TEST_ASSERT_EQUAL_STRING("GGGG", f.beltLeds().c_str());
-    TEST_ASSERT_EQUAL_STRING("BBBBBBBBBB", f.stationA().c_str());
-    TEST_ASSERT_EQUAL_STRING("BB", f.stationB().c_str());
+    TEST_ASSERT_EQUAL_STRING("PPPPPPPPPP", f.stationA().c_str());
+    TEST_ASSERT_EQUAL_STRING("OO", f.stationB().c_str());
 }
 
 void a_waiting_station_shows_a_band_moving_from_start_to_end() {
@@ -106,7 +111,7 @@ void a_waiting_station_shows_a_band_moving_from_start_to_end() {
     f.leds.update(800);  // Back to the start
     TEST_ASSERT_EQUAL_STRING("GGG.......", f.stationA().c_str());
 
-    TEST_ASSERT_EQUAL_STRING("BB", f.stationB().c_str());  // B stays idle
+    TEST_ASSERT_EQUAL_STRING("OO", f.stationB().c_str());  // B is idle
 }
 
 void a_band_fills_a_station_shorter_than_the_band() {
@@ -177,7 +182,7 @@ void every_update_lights_the_strip() {
 
 int main() {
     UNITY_BEGIN();
-    RUN_TEST(idle_stations_and_the_belt_are_blue);
+    RUN_TEST(idle_stations_show_their_own_color_and_the_belt_is_blue);
     RUN_TEST(the_belt_lights_the_leds_left_over_by_stations);
     RUN_TEST(a_waiting_station_shows_a_band_moving_from_start_to_end);
     RUN_TEST(a_band_fills_a_station_shorter_than_the_band);

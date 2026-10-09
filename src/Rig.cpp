@@ -100,12 +100,14 @@ bool begin() {
     // The belt goes first, so the stations draw over it.
     static StatusLeds statusLeds(
         ledStrip, config::kStatusLeds,
-        {{&belt, config::kPulse, config::kBeltLeds},
-         {&grahamCracker1, config::kPulse, config::kGrahamCracker1Leds},
-         {&chocolate, config::kPulse, config::kChocolateLeds},
-         {&marshmallow, config::kPulse, config::kMarshmallowLeds},
-         {&oven, config::kOvenPulse, config::kOvenLeds},
-         {&grahamCracker2, config::kPulse, config::kGrahamCracker2Leds}});
+        {{&belt, config::kBeltIdle, config::kPulse, config::kBeltLeds},
+         {&grahamCracker1, config::kGrahamCracker1Idle, config::kPulse,
+          config::kGrahamCracker1Leds},
+         {&chocolate, config::kChocolateIdle, config::kPulse, config::kChocolateLeds},
+         {&marshmallow, config::kMarshmallowIdle, config::kPulse, config::kMarshmallowLeds},
+         {&oven, config::kOvenIdle, config::kOvenPulse, config::kOvenLeds},
+         {&grahamCracker2, config::kGrahamCracker2Idle, config::kPulse,
+          config::kGrahamCracker2Leds}});
     g_leds = &statusLeds;
     return true;
 }
