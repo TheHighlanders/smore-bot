@@ -43,6 +43,9 @@ class Station {
     bool done() const { return m_phase == Phase::Done; }
     Phase phase() const { return m_phase; }
     bool continuous() const { return m_timing.workMs == kContinuous; }
+    // How far the Working phase has run, from 0 to 255. Zero outside Working and
+    // for continuous work.
+    uint8_t workProgress(uint32_t clock) const;
 
     const std::string& name() const { return m_name; }
     std::string state() const;
