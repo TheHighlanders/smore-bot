@@ -63,7 +63,7 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 //   12    conveyor motor
 //   13    GC2 pusher
 //   14    CHOC linear actuator
-//   15    GC1 linear actuator
+//   15    GC1 pusher solenoid
 //
 // Relay (kSlotRelay, P1-08TRS) channel map:
 //   1  oven heater
@@ -82,7 +82,7 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 7},
-    .extend = {kSlotDiscreteOut, 8}, // was 15, rewired to X when changed to pnumatic
+    .extend = {kSlotDiscreteOut, 15},  // Pneumatic pusher solenoid
     .extendMs = 4000,
     .retractMs = 2500,
     .transitMs = 0,  // Entry station
