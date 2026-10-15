@@ -115,7 +115,7 @@ const GcPusher::Move kGrahamCracker2Moves[] = {
     {false, false, true, 1500},   // lower claw
     {false, true, true, 2000},    // close claw
     {true, true, true, 1500},    // raise claw
-    {true, true, false, 8500},    // raise claw, retract pusher
+    {true, true, false, 8500},    // retract pusher
     {false, true, false, 2000},   // lower claw
     {false, false, false, 1000},  // open claw
     {true, false, false, 2000},   // raise claw
