@@ -66,7 +66,7 @@ void Oven::setHeating(bool on) {
 
 void Oven::setHeld(bool held) {
     if (m_config.enabled) {
-        m_p1.writeDiscrete(held ? 0 : 1, m_config.hold);  // Energized releases; rests captured
+        m_p1.writeDiscrete(held ? 1 : 0, m_config.hold);  // Energized holds; rests released
     }
 }
 
