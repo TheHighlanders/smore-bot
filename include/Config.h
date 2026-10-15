@@ -6,6 +6,7 @@
 #include "leds/StatusLeds.h"
 #include "machine/Station.h"
 #include "stations/GcPusher.h"
+#include "stations/HeatedStop.h"
 #include "stations/LinearDispenser.h"
 #include "stations/MotorDispenser.h"
 #include "stations/Oven.h"
@@ -69,6 +70,7 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 // Relay (kSlotRelay, P1-08TRS) channel map:
 //   1  oven heater
 //   2  ready light
+//   3  chocolate heater and stop
 //   8  MM dispense motor
 
 // Station times, in milliseconds:
@@ -99,13 +101,15 @@ const LinearDispenser::Config kChocolate = {
     .clearMs = 7000,
 };
 
-// Manual heater between chocolate and marshmallow. No outputs: the operator
-// releases the tray. The MM stop extends 16 s after the chocolate release, and
-// the operator releases the heater within 2 s of that.
-const Station::Timing kChocolateHeater = {
-    5000,   // Chocolate release -> tray reaches the heater
-    11000,  // Heater hold, so MM extends at 16 s
-    7000,   // Heater release -> tray fully past the heater
+// Chocolate heater between chocolate and marshmallow. One relay both holds the
+// tray and runs the heater. Each stage is timed from the chocolate release.
+const HeatedStop::Config kChocolateHeater = {
+    .output = {kSlotRelay, 3},
+    .timing = {
+        5000,   // Chocolate release -> tray reaches the heater
+        11000,  // Heater hold, so MM extends at 16 s
+        7000,   // Heater release -> tray fully past the heater
+    },
 };
 
 const MotorDispenser::Config kMarshmallow = {
