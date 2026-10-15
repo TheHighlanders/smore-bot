@@ -12,7 +12,7 @@
 #include "stations/LinearDispenser.h"
 #include "stations/MotorDispenser.h"
 #include "stations/Oven.h"
-#include "stations/TimerStation.h"
+#include "stations/HeatedStop.h"
 
 namespace rig {
 namespace {
@@ -75,7 +75,7 @@ bool begin() {
 
     static LinearDispenser grahamCracker1("GC1", P1, config::kGrahamCracker1);
     static LinearDispenser chocolate("CH", P1, config::kChocolate);
-    static TimerStation chocolateHeater("HEAT", config::kChocolateHeater);
+    static HeatedStop chocolateHeater("HEAT", P1, config::kChocolateHeater);
     static MotorDispenser marshmallow("MM", P1, config::kMarshmallow);
     static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2);
     static Oven oven("OVEN", P1, config::kOven, [](uint32_t clock) {
