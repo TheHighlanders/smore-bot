@@ -10,8 +10,8 @@
 #include "stations/MotorDispenser.h"
 #include "stations/Oven.h"
 
-// Every hardware address and time. Included once, from Rig.cpp, where the
-// stations are built and the line order is set.
+// Every hardware address and time. Rig.cpp builds the stations and sets the line
+// order from them.
 namespace config {
 
 // Base slot numbers. Channels name slots through this enum, so moving a module
@@ -29,8 +29,8 @@ struct ModuleSlot {
     uint8_t slot;  // Slots are 1-indexed
 };
 
-// Expected base layout, verified at boot. The machine starts once every module
-// listed is present.
+// Expected base layout, checked at boot. If a module is missing or in the wrong
+// slot, the sketch logs it and does not start.
 const ModuleSlot kModules[] = {
     {"P1-04NTC", kSlotThermistor},   // Oven temperature
     {"P1-16ND3", kSlotDiscreteIn},   // Start button, MM exit sensor
@@ -44,7 +44,7 @@ const size_t kModuleCount = sizeof(kModules) / sizeof(kModules[0]);
 const char kThermistorSetup[] = {0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00};
 
 const channelLabel kStartButton = {kSlotDiscreteIn, 11};
-const channelLabel kCancelCookButton = {kSlotDiscreteIn, 12};  // Unwired until installed
+const channelLabel kCancelCookButton = {kSlotDiscreteIn, 12};  // Cancel cook button
 const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready for a start
 
 // Discrete in (kSlotDiscreteIn, P1-16ND3) channel map:
@@ -55,16 +55,17 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 // Discrete out (kSlotDiscreteOut, P1-15TD2) channel map:
 //   1     GC2 claw
 //   2     GC2 lifter
-//   3     MM capture
-//   4     spare
-//   5     GC2 capture
-//   6     GC1 capture (planned)
-//   7     CHOC capture (planned)
-//   8-11  TBD
+//   3     GC2 capture
+//   4     oven hold
+//   5     MM capture
+//   6     CHOC capture
+//   7     GC1 capture
+//   8     GC1 pusher solenoid
+//   9-11  TBD
 //   12    conveyor motor
 //   13    GC2 pusher
 //   14    CHOC linear actuator
-//   15    GC1 linear actuator
+//   15    TBD
 //
 // Relay (kSlotRelay, P1-08TRS) channel map:
 //   1  oven heater
@@ -77,13 +78,14 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 //   clearMs    release -> tray fully past this station; the interlock that
 //              protects the station behind it
 //
-// Each station's work duration is the sum of its own actuator times.
+// Each station's work time comes from its own config: the sum of its actuator
+// strokes or moves, the cook time for the oven, or the motor timeout cap for MM.
 //
 // CALIBRATE all of these against the real belt before running product.
 
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 7},
-    .extend = {kSlotDiscreteOut, 8}, // was 15, rewired to X when changed to pnumatic
+    .extend = {kSlotDiscreteOut, 8},  // Pneumatic pusher solenoid
     .extendMs = 4000,
     .retractMs = 2500,
     .transitMs = 0,  // Entry station
@@ -132,8 +134,8 @@ const GcPusher::Config kGrahamCracker2 = {
     .clearMs = 5000,
 };
 
-// True runs the oven: heater and hold solenoid on for cookMs. False leaves its
-// outputs and thermistor idle.
+// True runs the oven: the hold solenoid holds the tray, and the heater runs until
+// the cook ends. False leaves its outputs and thermistor idle.
 const bool kOvenEnabled = true;
 
 const Oven::Config kOven = {
@@ -166,7 +168,7 @@ const uint8_t kLedPin = 0;
 const neoPixelType kLedType = NEO_GRB + NEO_KHZ800;
 const uint16_t kLedCount = 50;
 const uint8_t kLedBrightness = 64;  // 0 (dark) to 255 (brightest), for every color
-const uint32_t kLampTestMs = 400;   // How long each startup color shows
+const uint32_t kLampTestMs = 400;   // Unused
 
 const StatusLeds::Range kBeltLeds = {0, kLedCount};  // First LED, LED count
 const StatusLeds::Range kGrahamCracker1Leds = {0, 9};
