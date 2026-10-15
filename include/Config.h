@@ -3,6 +3,7 @@
 
 #include <P1AM.h>
 
+#include "leds/StatusLeds.h"
 #include "machine/Station.h"
 #include "stations/GcPusher.h"
 #include "stations/LinearDispenser.h"
@@ -114,7 +115,7 @@ const GcPusher::Move kGrahamCracker2Moves[] = {
     {false, false, true, 1500},   // lower claw
     {false, true, true, 2000},    // close claw
     {true, true, true, 1500},    // raise claw
-    {true, true, false, 8500},    // raise claw, retract pusher
+    {true, true, false, 8500},    // retract pusher
     {false, true, false, 2000},   // lower claw
     {false, false, false, 1000},  // open claw
     {true, false, false, 2000},   // raise claw
@@ -145,7 +146,71 @@ const Oven::Config kOven = {
     .clearMs = 5000,
 };
 
+// The oven accepts a new tray once GC2 is free or due to become free within
+// this long. 0 requires GC2 fully clear already.
+const uint32_t kOvenHandoffSlackMs = 0;
+
 const channelLabel kConveyorMotor = {kSlotDiscreteOut, 12};
+
+// Status LEDs: one strip along the belt, counted from the start of the belt.
+// Each station lights its own range. The belt spans the whole strip and is drawn
+// first, so the stations cover it and it shows on the LEDs left over.
+//
+// CALIBRATE the pin, type, count, brightness and ranges against the real strip. LEDs
+// past the end of the strip are ignored.
+
+// Arduino pin of the strip's data wire (DIN). It sends 3.3V, so a 5V strip may
+// need a level shifter (74AHCT125).
+const uint8_t kLedPin = 0;
+// Color order and speed. If red shows as green, try NEO_RGB or NEO_BRG.
+const neoPixelType kLedType = NEO_GRB + NEO_KHZ800;
+const uint16_t kLedCount = 50;
+const uint8_t kLedBrightness = 64;  // 0 (dark) to 255 (brightest), for every color
+const uint32_t kLampTestMs = 400;   // How long each startup color shows
+
+const StatusLeds::Range kBeltLeds = {0, kLedCount};  // First LED, LED count
+const StatusLeds::Range kGrahamCracker1Leds = {0, 9};
+const StatusLeds::Range kChocolateLeds = {9, 9};
+const StatusLeds::Range kMarshmallowLeds = {18, 9};
+const StatusLeds::Range kOvenLeds = {27, 9};
+const StatusLeds::Range kGrahamCracker2Leds = {36, 9};
+
+const Rgb kRed = {255, 0, 0};
+const Rgb kOrange = {255, 128, 0};
+const Rgb kYellow = {255, 255, 0};
+const Rgb kGreen = {0, 255, 0};
+const Rgb kCyan = {0, 255, 255};
+const Rgb kBlue = {0, 0, 255};
+const Rgb kViolet = {128, 0, 255};
+
+// Each station's color when the machine is stopped. Pick colors that are easy to tell apart.
+const Rgb kBeltIdle = kBlue;
+const Rgb kGrahamCracker1Idle = kRed;
+const Rgb kChocolateIdle = kOrange;
+const Rgb kMarshmallowIdle = kYellow;
+const Rgb kOvenIdle = kCyan;
+const Rgb kGrahamCracker2Idle = kViolet;
+
+// Every station shows:
+//
+//   idle      solid blue while running, else the station's own color (see above)
+//   arriving  green band, waiting for the tray
+//   working   pulsing (see kPulse)
+//   done      solid, in the pulse color
+//   clearing  blue band, tray leaving
+//
+// A band moves from the station's first LED to its last.
+const StatusLeds::Config kStatusLeds = {
+    .runningIdle = kBlue,
+    .arriving = kGreen,
+    .clearing = kBlue,
+    .bandWidth = 3,
+    .bandStepMs = 100,
+};
+
+// Working look: color, milliseconds per pulse.
+const StatusLeds::Pulse kPulse = {kGreen, 2000};
+const StatusLeds::Pulse kOvenPulse = {kRed, 800};
 
 // Watchdog window. HOLD de-energizes every module output and halts the CPU
 // until a power cycle, so a hung sketch turns the heater off.

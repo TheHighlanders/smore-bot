@@ -18,6 +18,7 @@ namespace {
 
 Machine g_machine;
 Oven* g_oven = nullptr;
+StatusLeds* g_leds = nullptr;
 bool g_startWasPressed = false;
 bool g_cancelCookWasPressed = false;
 
@@ -45,11 +46,18 @@ bool verifyModules() {
 
 Machine& machine() { return g_machine; }
 Oven& oven() { return *g_oven; }
+StatusLeds& leds() { return *g_leds; }
 
 bool begin() {
     Serial.begin(115200);
     pinMode(SWITCH_BUILTIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
+
+    // Start the strip before the base controller, so its data wire never floats.
+    // The lamp test checks the strip with no base controller connected.
+    static Adafruit_NeoPixel ledStrip(config::kLedCount, config::kLedPin, config::kLedType);
+    ledStrip.begin();
+    ledStrip.setBrightness(config::kLedBrightness);
 
     logLine("Smore Bot starting, waiting for base controller");
     logLine("No response? Check the external 24V supply is on.");
@@ -67,13 +75,28 @@ bool begin() {
     static LinearDispenser grahamCracker1("GC1", P1, config::kGrahamCracker1);
     static LinearDispenser chocolate("CH", P1, config::kChocolate);
     static MotorDispenser marshmallow("MM", P1, config::kMarshmallow);
-    static Oven oven("OVEN", P1, config::kOven);
     static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2);
+    static Oven oven("OVEN", P1, config::kOven, [](uint32_t clock) {
+        return grahamCracker2.freeWithin(clock, config::kOvenHandoffSlackMs);
+    });
     static Belt belt("BELT", P1, config::kConveyorMotor);
 
     g_oven = &oven;
     g_machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
                         {&belt});
+
+    // The belt goes first, so the stations draw over it.
+    static StatusLeds statusLeds(
+        ledStrip, config::kStatusLeds,
+        {{&belt, config::kBeltIdle, config::kPulse, config::kBeltLeds},
+         {&grahamCracker1, config::kGrahamCracker1Idle, config::kPulse,
+          config::kGrahamCracker1Leds},
+         {&chocolate, config::kChocolateIdle, config::kPulse, config::kChocolateLeds},
+         {&marshmallow, config::kMarshmallowIdle, config::kPulse, config::kMarshmallowLeds},
+         {&oven, config::kOvenIdle, config::kOvenPulse, config::kOvenLeds},
+         {&grahamCracker2, config::kGrahamCracker2Idle, config::kPulse,
+          config::kGrahamCracker2Leds}});
+    g_leds = &statusLeds;
     return true;
 }
 

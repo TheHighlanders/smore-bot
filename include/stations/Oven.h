@@ -3,6 +3,8 @@
 
 #include <P1AM.h>
 
+#include <functional>
+
 #include "machine/Station.h"
 
 // Holds a tray for cookMs with the heater relay on. The tray hold solenoid
@@ -20,7 +22,10 @@ class Oven : public Station {
         uint32_t clearMs;         // Release -> tray fully past this station
     };
 
-    Oven(std::string name, P1AM& p1, Config config);
+    // Consulted before accepting a new tray: is downstream ready for it?
+    using ReadyCheck = std::function<bool(uint32_t clock)>;
+
+    Oven(std::string name, P1AM& p1, Config config, ReadyCheck readyCheck);
 
     void selfTest() override;
 
@@ -30,6 +35,7 @@ class Oven : public Station {
 
    protected:
     void poll() override;
+    bool ready() const override;
     void onActivate() override;
     void onArrive() override;
     bool onWork(uint32_t elapsedMs) override;
@@ -46,6 +52,7 @@ class Oven : public Station {
 
     P1AM& m_p1;
     Config m_config;
+    ReadyCheck m_readyCheck;
     float m_temperature = 0;
     bool m_working = false;  // In the Working phase of a real cook cycle
     bool m_cancelRequested = false;

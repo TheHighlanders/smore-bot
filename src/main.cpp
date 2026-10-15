@@ -12,6 +12,9 @@
 static const uint32_t kModeReportMs = 15000;
 static const uint32_t kInputReportMs = 5000;
 static const uint32_t kStartDelayMs = 1000;
+// Sending a frame makes the clock lose a moment, so timers run long: about 2%
+// with 50 LEDs and a frame every 50 ms. More LEDs or more frames make it worse.
+static const uint32_t kLedFrameMs = 50;
 
 static SerialBoolean statusCommand("status", EPHEMERAL);
 static SerialBoolean startCommand("start", EPHEMERAL);
@@ -21,6 +24,7 @@ static bool ready = false;
 static bool debugMode = false;
 static uint32_t lastModeReport = 0;
 static uint32_t lastInputReport = 0;
+static uint32_t lastLedFrame = 0;
 static bool startPending = false;
 static uint32_t startRequestedAt = 0;
 
@@ -61,6 +65,10 @@ static void handleLine(const String& line) {
         if (!SerialBoolean::parseInput(line.c_str(), line.length())) {
             logLine("Unknown command: %s", line.c_str());
         }
+        return;
+    }
+    if(line == "led") {
+        rig::leds().selfTest();
         return;
     }
     // Typing 'debug' is already an explicit opt-in, so a station name runs
@@ -124,6 +132,10 @@ void loop() {
     }
 
     machine.update();
+    if (!debugMode && millis() - lastLedFrame >= kLedFrameMs) {
+        lastLedFrame = millis();
+        rig::leds().update(millis(), machine.isRunning());
+    }
 
     if (statusCommand.read()) {
         machine.printStatus();
