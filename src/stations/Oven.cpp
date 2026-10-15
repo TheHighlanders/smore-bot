@@ -44,7 +44,7 @@ void Oven::onRelease() { setHeld(false); }
 
 void Oven::onReset() {
     setHeating(false);
-    setHeld(false);
+    setHeld(true);
     m_working = false;
     m_cancelRequested = false;
 }
