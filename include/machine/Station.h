@@ -14,6 +14,8 @@
 // Subclasses supply hardware actions; timing and phase state live here.
 class Station {
    public:
+    enum class Phase { Idle, Arriving, Working, Done, Clearing };
+
     // Work that lasts until the station is reset (e.g. the belt).
     static const uint32_t kContinuous = 0xFFFFFFFFu;
 
@@ -36,7 +38,10 @@ class Station {
     virtual void selfTest() = 0;
 
     bool free() const { return m_phase == Phase::Idle && ready(); }
+    // True once the time remaining until Idle is at most slackMs.
+    bool freeWithin(uint32_t clock, uint32_t slackMs) const;
     bool done() const { return m_phase == Phase::Done; }
+    Phase phase() const { return m_phase; }
 
     const std::string& name() const { return m_name; }
     std::string state() const;
@@ -60,10 +65,11 @@ class Station {
     virtual std::string detail() const { return ""; }  // Appended to state()
 
    private:
-    enum class Phase { Idle, Arriving, Working, Done, Clearing };
-
     void enter(Phase phase, uint32_t clock);
     uint32_t elapsed(uint32_t clock) const { return clock - m_since; }
+    // Time until Idle, or kContinuous if there's no bound (Done, or
+    // continuous work).
+    uint32_t remainingMs(uint32_t clock) const;
 
     std::string m_name;
     Timing m_timing;
