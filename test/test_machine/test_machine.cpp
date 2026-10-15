@@ -14,10 +14,12 @@ namespace {
 const Station::Timing kEntry = {0, 1500, 2000};
 const Station::Timing kDispenser = {3000, 1500, 2000};
 const Station::Timing kOven = {3000, 45000, 2500};
+const Station::Timing kHeater = {5000, 11000, 7000};
 
 struct Line {
     FakeStation gc1{"GC1", kEntry};
     FakeStation choc{"CHOC", kDispenser};
+    FakeStation heat{"HEAT", kHeater};
     FakeStation mm{"MM", kDispenser};
     FakeStation oven{"OVEN", kOven};
     FakeStation gc2{"GC2", kDispenser};
@@ -25,10 +27,10 @@ struct Line {
     Machine machine;
 
     Line() {
-        machine.configure({&gc1, &choc, &mm, &oven, &gc2}, {&belt});
+        machine.configure({&gc1, &choc, &heat, &mm, &oven, &gc2}, {&belt});
     }
 
-    std::vector<FakeStation*> stations() { return {&gc1, &choc, &mm, &oven, &gc2}; }
+    std::vector<FakeStation*> stations() { return {&gc1, &choc, &heat, &mm, &oven, &gc2}; }
 
     // Advances wall time in 10 ms steps, optionally leaning on the start button.
     // Counting steps keeps the loop correct across the millis() rollover.
@@ -55,6 +57,30 @@ void one_tray_visits_every_station_in_order() {
         TEST_ASSERT_EQUAL_INT(1, station->completions);
         TEST_ASSERT_FALSE(station->occupied);
     }
+}
+
+// The MM stop extends 16 s after the chocolate release: 5 s of transit plus 11 s
+// of heater hold.
+void mm_extends_sixteen_seconds_after_chocolate_release() {
+    Line line;
+    line.machine.run(true);
+    line.machine.startCycle();
+
+    uint32_t chocReleasedAt = 0;
+    uint32_t mmExtendedAt = 0;
+    for (int step = 0; step < 10000 && mmExtendedAt == 0; step++) {
+        g_millis += 10;
+        line.machine.update();
+        if (chocReleasedAt == 0 && line.choc.completions == 1 && !line.choc.occupied) {
+            chocReleasedAt = g_millis;
+        }
+        if (mmExtendedAt == 0 && line.mm.activations == 1) {
+            mmExtendedAt = g_millis;
+        }
+    }
+    TEST_ASSERT_NOT_EQUAL(0, chocReleasedAt);
+    TEST_ASSERT_NOT_EQUAL(0, mmExtendedAt);
+    TEST_ASSERT_EQUAL_UINT32(16000, mmExtendedAt - chocReleasedAt);
 }
 
 void five_trays_never_collide() {
@@ -356,6 +382,7 @@ void line_survives_millis_rollover() {
 int main() {
     UNITY_BEGIN();
     RUN_TEST(one_tray_visits_every_station_in_order);
+    RUN_TEST(mm_extends_sixteen_seconds_after_chocolate_release);
     RUN_TEST(five_trays_never_collide);
     RUN_TEST(start_is_ignored_while_entry_station_is_busy);
     RUN_TEST(can_start_follows_the_entry_station);

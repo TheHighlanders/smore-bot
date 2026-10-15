@@ -83,6 +83,7 @@ running the whole line.
    | `belt` | Conveyor belt |
    | `gc1` | First graham cracker |
    | `ch` | Chocolate |
+   | `heat` | Chocolate heater (timing only, no outputs) |
    | `mm` | Marshmallow |
    | `oven` | Oven |
    | `gc2` | Top graham cracker |

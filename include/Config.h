@@ -10,8 +10,8 @@
 #include "stations/MotorDispenser.h"
 #include "stations/Oven.h"
 
-// Every hardware address and time. Included once, from Rig.cpp, where the
-// stations are built and the line order is set.
+// Every hardware address and time. Rig.cpp builds the stations and sets the line
+// order from them.
 namespace config {
 
 // Base slot numbers. Channels name slots through this enum, so moving a module
@@ -29,8 +29,8 @@ struct ModuleSlot {
     uint8_t slot;  // Slots are 1-indexed
 };
 
-// Expected base layout, verified at boot. The machine starts once every module
-// listed is present.
+// Expected base layout, checked at boot. If a module is missing or in the wrong
+// slot, the sketch logs it and does not start.
 const ModuleSlot kModules[] = {
     {"P1-04NTC", kSlotThermistor},   // Oven temperature
     {"P1-16ND3", kSlotDiscreteIn},   // Start button, MM exit sensor
@@ -44,7 +44,7 @@ const size_t kModuleCount = sizeof(kModules) / sizeof(kModules[0]);
 const char kThermistorSetup[] = {0x40, 0x03, 0x60, 0x07, 0x20, 0x02, 0x80, 0x00};
 
 const channelLabel kStartButton = {kSlotDiscreteIn, 11};
-const channelLabel kCancelCookButton = {kSlotDiscreteIn, 12};  // Unwired until installed
+const channelLabel kCancelCookButton = {kSlotDiscreteIn, 12};  // Cancel cook button
 const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready for a start
 
 // Discrete in (kSlotDiscreteIn, P1-16ND3) channel map:
@@ -55,16 +55,17 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 // Discrete out (kSlotDiscreteOut, P1-15TD2) channel map:
 //   1     GC2 claw
 //   2     GC2 lifter
-//   3     MM capture
-//   4     spare
-//   5     GC2 capture
-//   6     GC1 capture (planned)
-//   7     CHOC capture (planned)
-//   8-11  TBD
+//   3     GC2 capture
+//   4     oven hold
+//   5     MM capture
+//   6     CHOC capture
+//   7     GC1 capture
+//   8     GC1 pusher solenoid
+//   9-11  TBD
 //   12    conveyor motor
 //   13    GC2 pusher
 //   14    CHOC linear actuator
-//   15    GC1 linear actuator
+//   15    TBD
 //
 // Relay (kSlotRelay, P1-08TRS) channel map:
 //   1  oven heater
@@ -77,15 +78,16 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 //   clearMs    release -> tray fully past this station; the interlock that
 //              protects the station behind it
 //
-// Each station's work duration is the sum of its own actuator times.
+// Each station's work time comes from its own config: the sum of its actuator
+// strokes or moves, the cook time for the oven, or the motor timeout cap for MM.
 //
 // CALIBRATE all of these against the real belt before running product.
 
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 7},
-    .extend = {kSlotDiscreteOut, 15},
-    .extendMs = 7500,
-    .retractMs = 7500,
+    .extend = {kSlotDiscreteOut, 8},
+    .extendMs = 4000,
+    .retractMs = 2500,
     .transitMs = 0,  // Entry station
     .clearMs = 7000,
 };
@@ -99,11 +101,20 @@ const LinearDispenser::Config kChocolate = {
     .clearMs = 7000,
 };
 
+// Manual heater between chocolate and marshmallow. No outputs: the operator
+// releases the tray. The MM stop extends 16 s after the chocolate release, and
+// the operator releases the heater within 2 s of that.
+const Station::Timing kChocolateHeater = {
+    5000,   // Chocolate release -> tray reaches the heater
+    11000,  // Heater hold, so MM extends at 16 s
+    7000,   // Heater release -> tray fully past the heater
+};
+
 const MotorDispenser::Config kMarshmallow = {
     .capture = {kSlotDiscreteOut, 5},
     .motor = {kSlotRelay, 8},
     .exitSensor = {kSlotDiscreteIn, 9},
-    .timeoutMs = 3500,
+    .timeoutMs = 2000,
     .transitMs = 5000,
     .clearMs = 7000,
 };
@@ -111,10 +122,11 @@ const MotorDispenser::Config kMarshmallow = {
 // One GC2 cycle, in order.
 const GcPusher::Move kGrahamCracker2Moves[] = {
     // lifterUp, clawClosed, pusherOut, ms
-    {true, false, true, 7000},    // extend graham cracker
-    {false, false, true, 2000},   // lower claw
+    {true, false, true, 8000},    // extend graham cracker
+    {false, false, true, 1500},   // lower claw
     {false, true, true, 2000},    // close claw
-    {true, true, false, 7000},    // raise claw, retract pusher
+    {true, true, true, 1500},    // raise claw
+    {true, true, false, 8500},    // retract pusher
     {false, true, false, 2000},   // lower claw
     {false, false, false, 1000},  // open claw
     {true, false, false, 2000},   // raise claw
@@ -131,8 +143,8 @@ const GcPusher::Config kGrahamCracker2 = {
     .clearMs = 5000,
 };
 
-// True runs the oven: heater and hold solenoid on for cookMs. False leaves its
-// outputs and thermistor idle.
+// True runs the oven: the hold solenoid holds the tray, and the heater runs until
+// the cook ends. False leaves its outputs and thermistor idle.
 const bool kOvenEnabled = true;
 
 const Oven::Config kOven = {
@@ -140,7 +152,7 @@ const Oven::Config kOven = {
     .heater = {kSlotRelay, 1},
     .hold = {kSlotDiscreteOut, 4},
     .thermistor = {kSlotThermistor, 1},  // Shown in status
-    .cookMs = 22 * 1000,
+    .cookMs = 26 * 1000,
     .transitMs = 7000,
     .clearMs = 5000,
 };
@@ -165,14 +177,14 @@ const uint8_t kLedPin = 0;
 const neoPixelType kLedType = NEO_GRB + NEO_KHZ800;
 const uint16_t kLedCount = 50;
 const uint8_t kLedBrightness = 64;  // 0 (dark) to 255 (brightest), for every color
-const uint32_t kLampTestMs = 400;   // How long each startup color shows
 
 const StatusLeds::Range kBeltLeds = {0, kLedCount};  // First LED, LED count
 const StatusLeds::Range kGrahamCracker1Leds = {0, 9};
 const StatusLeds::Range kChocolateLeds = {9, 9};
-const StatusLeds::Range kMarshmallowLeds = {18, 9};
-const StatusLeds::Range kOvenLeds = {27, 9};
-const StatusLeds::Range kGrahamCracker2Leds = {36, 9};
+const StatusLeds::Range kChocolateHeaterLeds = {18, 5};
+const StatusLeds::Range kMarshmallowLeds = {23, 9};
+const StatusLeds::Range kOvenLeds = {32, 9};
+const StatusLeds::Range kGrahamCracker2Leds = {41, 9};
 
 const Rgb kRed = {255, 0, 0};
 const Rgb kOrange = {255, 128, 0};
@@ -180,12 +192,14 @@ const Rgb kYellow = {255, 255, 0};
 const Rgb kGreen = {0, 255, 0};
 const Rgb kCyan = {0, 255, 255};
 const Rgb kBlue = {0, 0, 255};
+const Rgb kPink = {255, 0, 128};
 const Rgb kPurple = {160, 32, 240};
 
 // Each station's color when the machine is stopped. Pick colors that are easy to tell apart.
 const Rgb kBeltIdle = kBlue;
 const Rgb kGrahamCracker1Idle = kRed;
 const Rgb kChocolateIdle = kOrange;
+const Rgb kChocolateHeaterIdle = kPink;
 const Rgb kMarshmallowIdle = kYellow;
 const Rgb kOvenIdle = kCyan;
 const Rgb kGrahamCracker2Idle = kPurple;

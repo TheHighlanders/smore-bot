@@ -8,14 +8,14 @@
 #include "machine/Station.h"
 
 // Holds a tray for cookMs with the heater relay on. The tray hold solenoid
-// rests captured for that window and energizes to release the tray
-// afterward. The thermistor reading appears in the status line.
+// energizes to hold the tray and rests released, so a tray drops out when
+// power is off. The thermistor reading appears in the status line.
 class Oven : public Station {
    public:
     struct Config {
         bool enabled;             // True drives the heater, hold and thermistor
         channelLabel heater;      // Heater relay
-        channelLabel hold;        // Tray hold solenoid; energize to release, rests captured
+        channelLabel hold;        // Tray hold solenoid; energize to hold, rests released
         channelLabel thermistor;  // Shown in status
         uint32_t cookMs;          // Time the tray is held in the oven
         uint32_t transitMs;       // Upstream release -> tray arrives here
