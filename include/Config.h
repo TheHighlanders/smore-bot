@@ -85,7 +85,7 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 
 const LinearDispenser::Config kGrahamCracker1 = {
     .capture = {kSlotDiscreteOut, 7},
-    .extend = {kSlotDiscreteOut, 8},  // Pneumatic pusher solenoid
+    .extend = {kSlotDiscreteOut, 8},
     .extendMs = 4000,
     .retractMs = 2500,
     .transitMs = 0,  // Entry station
@@ -168,7 +168,6 @@ const uint8_t kLedPin = 0;
 const neoPixelType kLedType = NEO_GRB + NEO_KHZ800;
 const uint16_t kLedCount = 50;
 const uint8_t kLedBrightness = 64;  // 0 (dark) to 255 (brightest), for every color
-const uint32_t kLampTestMs = 400;   // Unused
 
 const StatusLeds::Range kBeltLeds = {0, kLedCount};  // First LED, LED count
 const StatusLeds::Range kGrahamCracker1Leds = {0, 9};
