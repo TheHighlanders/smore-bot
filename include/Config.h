@@ -99,6 +99,15 @@ const LinearDispenser::Config kChocolate = {
     .clearMs = 7000,
 };
 
+// Manual heater between chocolate and marshmallow. No outputs: the operator
+// releases the tray. The MM stop extends 16 s after the chocolate release, and
+// the operator releases the heater within 2 s of that.
+const Station::Timing kChocolateHeater = {
+    5000,   // Chocolate release -> tray reaches the heater
+    11000,  // Heater hold, so MM extends at 16 s
+    7000,   // Heater release -> tray fully past the heater
+};
+
 const MotorDispenser::Config kMarshmallow = {
     .capture = {kSlotDiscreteOut, 5},
     .motor = {kSlotRelay, 8},
@@ -171,9 +180,10 @@ const uint32_t kLampTestMs = 400;   // How long each startup color shows
 const StatusLeds::Range kBeltLeds = {0, kLedCount};  // First LED, LED count
 const StatusLeds::Range kGrahamCracker1Leds = {0, 9};
 const StatusLeds::Range kChocolateLeds = {9, 9};
-const StatusLeds::Range kMarshmallowLeds = {18, 9};
-const StatusLeds::Range kOvenLeds = {27, 9};
-const StatusLeds::Range kGrahamCracker2Leds = {36, 9};
+const StatusLeds::Range kChocolateHeaterLeds = {18, 5};
+const StatusLeds::Range kMarshmallowLeds = {23, 9};
+const StatusLeds::Range kOvenLeds = {32, 9};
+const StatusLeds::Range kGrahamCracker2Leds = {41, 9};
 
 const Rgb kRed = {255, 0, 0};
 const Rgb kOrange = {255, 128, 0};
@@ -182,11 +192,13 @@ const Rgb kGreen = {0, 255, 0};
 const Rgb kCyan = {0, 255, 255};
 const Rgb kBlue = {0, 0, 255};
 const Rgb kViolet = {128, 0, 255};
+const Rgb kPink = {255, 0, 128};
 
 // Each station's color when the machine is stopped. Pick colors that are easy to tell apart.
 const Rgb kBeltIdle = kBlue;
 const Rgb kGrahamCracker1Idle = kRed;
 const Rgb kChocolateIdle = kOrange;
+const Rgb kChocolateHeaterIdle = kPink;
 const Rgb kMarshmallowIdle = kYellow;
 const Rgb kOvenIdle = kCyan;
 const Rgb kGrahamCracker2Idle = kViolet;
