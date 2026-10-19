@@ -12,6 +12,7 @@
 #include "stations/LinearDispenser.h"
 #include "stations/MotorDispenser.h"
 #include "stations/Oven.h"
+#include "stations/TimerStation.h"
 
 namespace rig {
 namespace {
@@ -74,6 +75,7 @@ bool begin() {
 
     static LinearDispenser grahamCracker1("GC1", P1, config::kGrahamCracker1);
     static LinearDispenser chocolate("CH", P1, config::kChocolate);
+    static TimerStation chocolateHeater("HEAT", config::kChocolateHeater);
     static MotorDispenser marshmallow("MM", P1, config::kMarshmallow);
     static GcPusher grahamCracker2("GC2", P1, config::kGrahamCracker2);
     static Oven oven("OVEN", P1, config::kOven, [](uint32_t clock) {
@@ -82,7 +84,8 @@ bool begin() {
     static Belt belt("BELT", P1, config::kConveyorMotor);
 
     g_oven = &oven;
-    g_machine.configure({&grahamCracker1, &chocolate, &marshmallow, &oven, &grahamCracker2},
+    g_machine.configure({&grahamCracker1, &chocolate, &chocolateHeater, &marshmallow, &oven,
+                         &grahamCracker2},
                         {&belt});
 
     // The belt goes first, so the stations draw over it.
@@ -92,6 +95,8 @@ bool begin() {
          {&grahamCracker1, config::kGrahamCracker1Idle, config::kPulse,
           config::kGrahamCracker1Leds},
          {&chocolate, config::kChocolateIdle, config::kPulse, config::kChocolateLeds},
+         {&chocolateHeater, config::kChocolateHeaterIdle, config::kPulse,
+          config::kChocolateHeaterLeds},
          {&marshmallow, config::kMarshmallowIdle, config::kPulse, config::kMarshmallowLeds},
          {&oven, config::kOvenIdle, config::kOvenPulse, config::kOvenLeds},
          {&grahamCracker2, config::kGrahamCracker2Idle, config::kPulse,
