@@ -53,6 +53,18 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 //   11  start button
 //   12  cancel cook button
 
+/**
+ * Gc1 stopper is over stopper
+Gc 1 pusher is mm stopper
+Ch stopper is ch2 stopper
+Mm stopper is gc2 down
+Oven hold is gc2 grab
+gc2 stop is ch stop
+gc2 down is gc1 stop
+gc2 grab is ???
+ * 
+ */
+
 // Discrete out (kSlotDiscreteOut, P1-15TD2) channel map:
 //   1     GC2 claw
 //   2     GC2 lifter
@@ -86,8 +98,8 @@ const channelLabel kReadyLight = {kSlotRelay, 2};              // Lit when ready
 // CALIBRATE all of these against the real belt before running product.
 
 const LinearDispenser::Config kGrahamCracker1 = {
-    .capture = {kSlotDiscreteOut, 7},
-    .extend = {kSlotDiscreteOut, 8},
+    .capture = {kSlotDiscreteOut, 2},
+    .extend = {kSlotDiscreteOut, 1}, // was 5, swap with gc down
     .extendMs = 4000,
     .retractMs = 2500,
     .transitMs = 0,  // Entry station
@@ -95,7 +107,7 @@ const LinearDispenser::Config kGrahamCracker1 = {
 };
 
 const LinearDispenser::Config kChocolate = {
-    .capture = {kSlotDiscreteOut, 6},
+    .capture = {kSlotDiscreteOut, 3},
     .extend = {kSlotDiscreteOut, 14},
     .extendMs = 4700,
     .retractMs = 4700,
@@ -115,7 +127,7 @@ const HeatedStop::Config kChocolateHeater = {
 };
 
 const MotorDispenser::Config kMarshmallow = {
-    .capture = {kSlotDiscreteOut, 5},
+    .capture = {kSlotDiscreteOut, 8},
     .motor = {kSlotRelay, 8},
     .exitSensor = {kSlotDiscreteIn, 9},
     .timeoutMs = 2000,
@@ -137,13 +149,13 @@ const GcPusher::Move kGrahamCracker2Moves[] = {
 };
 
 const GcPusher::Config kGrahamCracker2 = {
-    .capture = {kSlotDiscreteOut, 3},
-    .lifter = {kSlotDiscreteOut, 2},
-    .claw = {kSlotDiscreteOut, 1},
+    .capture = {kSlotDiscreteOut, 6},
+    .lifter = {kSlotDiscreteOut, 5}, // was 7 swap with lifter, then 1
+    .claw = {kSlotDiscreteOut, 4},
     .pusher = {kSlotDiscreteOut, 13},
     .moves = kGrahamCracker2Moves,
     .moveCount = sizeof(kGrahamCracker2Moves) / sizeof(kGrahamCracker2Moves[0]),
-    .transitMs = 7000,
+    .transitMs = 0000, // start early
     .clearMs = 5000,
 };
 
@@ -154,9 +166,9 @@ const bool kOvenEnabled = true;
 const Oven::Config kOven = {
     .enabled = kOvenEnabled,
     .heater = {kSlotRelay, 1},
-    .hold = {kSlotDiscreteOut, 4},
+    .hold = {kSlotDiscreteOut, 7}, // was 1, swap with lifter
     .thermistor = {kSlotThermistor, 1},  // Shown in status
-    .cookMs = 26 * 1000,
+    .cookMs = 30 * 1000,
     .transitMs = 7000,
     .clearMs = 5000,
 };
